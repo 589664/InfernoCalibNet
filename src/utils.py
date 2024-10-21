@@ -20,24 +20,35 @@ def load_image(image_path: str, img_size: int) -> Image.Image:
 
 def compute_mean_std(image_paths: list[str], img_size: int) -> tuple[float, float]:
     """
-    Computes the mean and standard deviation of pixel values for a list of images.
-
+    Computes the mean and standard deviation of pixel values for a list of images in a memory-efficient way.
     Args:
         image_paths (list[str]): A list of paths to image files.
         img_size (int): The target size for resizing the images (same value for width and height).
-
     Returns:
         tuple[float, float]: The mean and standard deviation of the pixel values across all images.
     """
-    pixel_values = []
+    n_pixels = 0
+    mean_sum = 0.0
+    variance_sum = 0.0
+
     for img_path in image_paths:
         img = load_image(img_path, img_size)
-        pixel_values.append(np.array(img).flatten())
-    pixel_values = np.concatenate(pixel_values)
-    mean = np.mean(pixel_values)
-    std = np.std(pixel_values)
-    return mean, std
+        img_np = np.array(img).flatten()  # Convert image to a numpy array and flatten it
 
+        # Incrementally update the mean and variance
+        n = img_np.size
+        n_pixels += n
+        mean_sum += np.sum(img_np)
+        variance_sum += np.sum((img_np - (mean_sum / n_pixels))**2)
+
+    # Compute the final mean
+    mean = mean_sum / n_pixels
+
+    # Compute variance and standard deviation
+    variance = variance_sum / n_pixels
+    std = np.sqrt(variance)
+
+    return mean, std
 #########################################################################################################
 
 def analyze_label_combinations(df: pd.DataFrame, underrepresented_threshold: int = 2) -> pd.DataFrame:
