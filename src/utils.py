@@ -1,5 +1,7 @@
-from PIL import Image
 import numpy as np
+import pandas as pd
+from PIL import Image
+from collections import Counter
 
 def load_image(image_path: str, img_size: int) -> Image.Image:
     """
@@ -35,4 +37,48 @@ def compute_mean_std(image_paths: list[str], img_size: int) -> tuple[float, floa
     mean = np.mean(pixel_values)
     std = np.std(pixel_values)
     return mean, std
+
+#########################################################################################################
+
+def analyze_label_combinations(df: pd.DataFrame, underrepresented_threshold: int = 2) -> pd.DataFrame:
+    """
+    Analyze the distribution of label combinations and find underrepresented label combinations in the dataset.
+    Return a DataFrame summarizing underrepresented combinations and the corresponding images.
+
+    Args:
+    - df (pd.DataFrame): Input DataFrame with 'MultiHotLabels' as multi-hot encoded arrays and 'ImageID'.
+    - underrepresented_threshold (int): Minimum number of instances for a label combination to not be considered underrepresented.
+
+    Returns:
+    - pd.DataFrame: A DataFrame summarizing label combination statistics and the images associated with underrepresented combinations.
+    """
+
+    # Extract relevant columns
+    label_combinations = df['Labels'].apply(lambda x: sorted(x))
+
+    # Count occurrences of each unique label combination
+    combination_counts = Counter(label_combinations.apply(tuple))
+    combination_stats = pd.DataFrame([(list(k), v) for k, v in combination_counts.items()], columns=['Label Combination', 'Count'])
+
+    # Identify underrepresented combinations
+    underrepresented_combinations = combination_stats[combination_stats['Count'] < underrepresented_threshold]
+
+    # Create a DataFrame to store image associations with underrepresented label combinations
+    images_by_combination = pd.DataFrame(columns=['Label Combination', 'ImageID'])
+
+    for combination in underrepresented_combinations['Label Combination']:
+        # Find all images associated with the underrepresented combination
+        matching_images = df[df['Labels'].apply(lambda x: sorted(x) == combination)]['ImageID']
+
+        # Create a DataFrame of the underrepresented combination and its associated images
+        combination_image_df = pd.DataFrame({
+            'Label Combination': [combination] * len(matching_images),
+            'ImageID': matching_images
+        })
+
+        # Append to the main DataFrame
+        images_by_combination = pd.concat([images_by_combination, combination_image_df], ignore_index=True)
+
+    # Return statistics of combinations and the underrepresented combinations with corresponding images
+    return combination_stats, images_by_combination
 

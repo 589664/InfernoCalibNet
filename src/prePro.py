@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from collections import Counter
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
 
 def preprocess_metadata(csv_path: str, image_folder: str, save_path: str) -> pd.DataFrame:
@@ -48,41 +49,38 @@ def preprocess_metadata(csv_path: str, image_folder: str, save_path: str) -> pd.
 
     return filtered_df
 
+#########################################################################################################
 
-def calculate_label_statistics(df: pd.DataFrame, target_percentage: float = 3.5) -> pd.DataFrame:
+def calculate_balanced_label_statistics(df: pd.DataFrame, target_percentage: float = 3.5) -> pd.DataFrame:
     """
-    Calculates label statistics and determines augmentation factors for underrepresented labels,
-    with special cases for certain labels (like Cardiomegaly and Pneumothorax) that cannot be flipped.
+    Calculates label statistics and determines augmentation factors for underrepresented labels.
 
     Args:
         df (pd.DataFrame): The preprocessed metadata DataFrame containing 'Labels'.
-        target_percentage (float): The target percentage for balancing labels (default: 10%).
+        target_percentage (float): The target percentage for balancing labels (default: 3.5%).
 
     Returns:
         pd.DataFrame: A DataFrame with statistics and augmentation factors for each label.
     """
-    # Define labels that should not be flipped
     no_flip_labels = ['Cardiomegaly', 'Pneumothorax']
 
-    # Flatten the list of labels to count individual occurrences
+    # Flatten labels list to count individual occurrences
     all_labels = [label for labels_list in df['Labels'] for label in labels_list]
-
-    # Use Counter to get the frequency of each label
     label_counts = Counter(all_labels)
 
-    # Calculate total number of images
+    # Calculate total images
     total_images = len(df)
 
-    # Create a DataFrame to store the statistics
+    # Create DataFrame for label statistics
     label_stats = pd.DataFrame({
         'Label': list(label_counts.keys()),
-        'Count': list(label_counts.values())
+        'Label_Occurrence': list(label_counts.values())
     })
 
-    # Calculate percentage for each label
-    label_stats['Percentage'] = (label_stats['Count'] / total_images) * 100
+    # Calculate label occurrence percentage
+    label_stats['Label_Occurrence_Percentage'] = (label_stats['Label_Occurrence'] / label_stats['Label_Occurrence'].sum()) * 100
 
-    # Calculate the augmentation factor for each label
+    # Calculate augmentation factor based on underrepresentation
     def calculate_augmentation(label, percentage):
         if label in no_flip_labels:
             # For labels that can't be flipped
@@ -92,15 +90,50 @@ def calculate_label_statistics(df: pd.DataFrame, target_percentage: float = 3.5)
             return max(1, min(5, int(target_percentage / percentage))) if percentage < target_percentage else 0
 
     label_stats['Augmentation_Factor'] = label_stats.apply(
-        lambda row: calculate_augmentation(row['Label'], row['Percentage']), axis=1
+        lambda row: calculate_augmentation(row['Label'], row['Label_Occurrence_Percentage']), axis=1
     )
 
-    # Sort by label count (descending)
-    label_stats = label_stats.sort_values(by='Count', ascending=False).reset_index(drop=True)
+    # Drop decimals from Label_Occurrence and Augmentation_Factor
+    label_stats['Label_Occurrence'] = label_stats['Label_Occurrence'].astype(int)
+    label_stats['Augmentation_Factor'] = label_stats['Augmentation_Factor'].astype(int)
 
-    # Print the statistics
-    print(f'Total number of images: {total_images}')
-    print('Label statistics:')
-    print(label_stats)
+    # Add total columns for sum of label counts and percentages
+    label_stats.loc['Total'] = label_stats[['Label_Occurrence', 'Label_Occurrence_Percentage']].sum()
+    label_stats.loc['Total', 'Label'] = 'Total'
+    label_stats.loc['Total', 'Augmentation_Factor'] = None  # No augmentation for total row
 
     return label_stats
+
+#########################################################################################################
+
+def stratified_split_by_individual_labels(df: pd.DataFrame, train_size: int, test_size: int):
+    """
+    Split the dataset while maintaining the distribution of individual labels rather than full combinations.
+
+    Args:
+    - df (pd.DataFrame): The full dataset containing the ImageID, Labels, and other metadata.
+    - train_size (int): Number of samples to include in the training set.
+    - test_size (int): Number of samples to include in the testing/validation set.
+
+    Returns:
+    - train_df (pd.DataFrame): Training set.
+    - test_df (pd.DataFrame): Testing/validation set.
+    """
+    # Create a column that reflects the number of individual labels per sample
+    df['NumLabels'] = df['Labels'].apply(len)
+
+    # Perform stratified sampling based on the number of labels present in each image
+    train_df, test_df = train_test_split(df,
+                                         train_size=train_size,
+                                         test_size=test_size,
+                                         stratify=df['NumLabels'])
+
+    # Drop the helper 'NumLabels' column
+    train_df.drop(columns=['NumLabels'], inplace=True)
+    test_df.drop(columns=['NumLabels'], inplace=True)
+
+    return train_df, test_df
+
+
+
+
