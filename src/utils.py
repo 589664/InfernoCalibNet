@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from PIL import Image
+import tensorflow as tf
 from collections import Counter
 
 def load_image(image_path: str, img_size: int) -> Image.Image:
@@ -49,6 +50,60 @@ def compute_mean_std(image_paths: list[str], img_size: int) -> tuple[float, floa
     std = np.sqrt(variance)
 
     return mean, std
+
+#########################################################################################################
+
+def compute_class_weights(df, num_labels):
+    """
+    Compute class weights for multi-label classification from a DataFrame.
+
+    Args:
+    - df (pd.DataFrame): The DataFrame containing the dataset with a 'MultiHotLabels' column.
+    - num_labels (int): The number of labels/classes in the dataset (size of the multi-hot vector).
+
+    Returns:
+    - class_weights (np.array): Array of computed weights for each label/class.
+    """
+    # Initialize an array to hold the counts of each label
+    label_counts = np.zeros(num_labels)
+
+    # Iterate over the DataFrame and sum the label occurrences
+    for labels in df['MultiHotLabels']:
+        label_counts += np.array(labels)  # Add the counts of each label
+
+    # Total number of samples
+    total_samples = len(df)
+
+    # Compute class weights based on the formula: Total samples / (num_labels * count of each label)
+    class_weights = total_samples / (num_labels * label_counts)
+
+    return class_weights
+
+#########################################################################################################
+
+# Custom weighted binary cross-entropy function
+def weighted_binary_crossentropy(class_weights):
+    """
+    Create a weighted binary cross-entropy loss function for multi-label classification.
+
+    Args:
+    - class_weights: A list or array of weights for each class.
+
+    Returns:
+    - A custom loss function that applies class weights.
+    """
+    def loss_fn(y_true, y_pred):
+        # Compute binary cross-entropy
+        bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
+
+        # Apply class weights to the binary cross-entropy
+        weights = tf.reduce_sum(class_weights * y_true, axis=-1)  # Apply weights to positive labels
+        weighted_bce = weights * bce
+
+        return tf.reduce_mean(weighted_bce)
+
+    return loss_fn
+
 #########################################################################################################
 
 def analyze_label_combinations(df: pd.DataFrame, underrepresented_threshold: int = 2) -> pd.DataFrame:
