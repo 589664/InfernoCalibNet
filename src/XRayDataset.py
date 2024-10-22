@@ -1,8 +1,8 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
 import numpy as np
 from .utils import load_image
+from torchvision import transforms
+from torch.utils.data import Dataset, DataLoader
 
 class XRayDataset(Dataset):
     def __init__(self, dataframe, image_dir, img_size, mean, std):
@@ -32,7 +32,7 @@ class XRayDataset(Dataset):
     def __getitem__(self, idx):
         # Get image path and labels
         image_id = self.dataframe.iloc[idx]['ImageID']
-        img_path = f"{self.image_dir}/{image_id}.png"  # Assuming images are in PNG format
+        img_path = f"{self.image_dir}/{image_id}.png"  # Images in PNG format
 
         # Load image using the helper method and convert to grayscale
         image = load_image(img_path, self.img_size)
@@ -45,3 +45,4 @@ class XRayDataset(Dataset):
         labels = torch.tensor(self.dataframe.iloc[idx]['MultiHotLabels'], dtype=torch.float32)
 
         return image, labels
+

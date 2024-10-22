@@ -124,9 +124,9 @@ def stratified_split_by_individual_labels(df: pd.DataFrame, train_size: int, tes
 
     # Perform stratified sampling based on the number of labels present in each image
     train_df, test_df = train_test_split(df,
-                                         train_size=train_size,
-                                         test_size=test_size,
-                                         stratify=df['NumLabels'])
+                                        train_size=train_size,
+                                        test_size=test_size,
+                                        stratify=df['NumLabels'])
 
     # Drop the helper 'NumLabels' column
     train_df.drop(columns=['NumLabels'], inplace=True)

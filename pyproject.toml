@@ -7,7 +7,7 @@ name = "infernoCalibNet"
 version = "0.1.0"
 dependencies = [
   "python-dotenv",
-  "numpy>=2.1.1",
+  "numpy>=1.26.4",
   "pandas>=2.2.3",
   "scikit-learn>=1.5.2",
   "scipy>=1.14.1",
