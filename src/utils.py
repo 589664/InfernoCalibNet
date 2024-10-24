@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from PIL import Image
-import tensorflow as tf
+import torch
+import torch.nn.functional as F
 from collections import Counter
 
 def load_image(image_path: str, img_size: int) -> Image.Image:
@@ -81,28 +82,25 @@ def compute_class_weights(df, num_labels):
 
 #########################################################################################################
 
-# Custom weighted binary cross-entropy function
+# Custom weighted binary cross-entropy function for PyTorch
 def weighted_binary_crossentropy(class_weights):
     """
-    Create a weighted binary cross-entropy loss function for multi-label classification.
-
-    Args:
-    - class_weights: A list or array of weights for each class.
-
-    Returns:
-    - A custom loss function that applies class weights.
+    Custom weighted binary cross-entropy for multi-label classification.
     """
-    def loss_fn(y_true, y_pred):
-        # Compute binary cross-entropy
-        bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
+    class_weights = torch.tensor(class_weights, dtype=torch.float32).to('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # Apply class weights to the binary cross-entropy
-        weights = tf.reduce_sum(class_weights * y_true, axis=-1)  # Apply weights to positive labels
+    def loss_fn(y_true, y_pred):
+        # Compute binary cross-entropy with logits
+        bce = F.binary_cross_entropy_with_logits(y_pred, y_true, reduction='none')
+
+        # Apply class weights (you may need to reshape or broadcast the weights here)
+        weights = class_weights * y_true + (1 - y_true)
         weighted_bce = weights * bce
 
-        return tf.reduce_mean(weighted_bce)
+        return weighted_bce.mean()
 
     return loss_fn
+
 
 #########################################################################################################
 
