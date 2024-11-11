@@ -106,7 +106,7 @@ def calculate_balanced_label_statistics(df: pd.DataFrame, target_percentage: flo
 
 #########################################################################################################
 
-def stratified_split_by_individual_labels(df: pd.DataFrame, train_size: int, test_size: int):
+def distribution_df_split(df: pd.DataFrame, train_size: int, test_size: int):
     """
     Split the dataset while maintaining the distribution of individual labels rather than full combinations.
 

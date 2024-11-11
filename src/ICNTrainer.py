@@ -1,119 +1,167 @@
+from rich.console import Console
+from tqdm.rich import tqdm
 import torch
-from tqdm import tqdm
 import wandb
+import warnings
+from sklearn.metrics import roc_auc_score
+import numpy as np
+from tqdm import TqdmExperimentalWarning
 
-# ICNTrainer Class for PyTorch
+
 class ICNTrainer:
-    def __init__(self, model, train_loader, val_loader, optimizer, criterion, device, project_name, config=None):
+    def __init__(
+        self,
+        model,
+        train_loader,
+        val_loader,
+        optimizer,
+        criterion,
+        device,
+        project_name,
+        config=None,
+        log_every_n_batches=10,
+    ):
         """
         Initialize the ICNTrainer class with a PyTorch model and W&B integration.
-
-        Args:
-        - model: The PyTorch model to be trained.
-        - train_loader: The DataLoader for training data.
-        - val_loader: The DataLoader for validation data.
-        - optimizer: The optimizer for training (e.g., Adam, SGD).
-        - criterion: The loss function (e.g., BCEWithLogitsLoss).
-        - device: The device (e.g., 'cuda' or 'cpu').
-        - project_name: The W&B project name.
-        - config (optional): Dictionary containing hyperparameters and metadata to track in W&B.
         """
+        # Existing Console instance
+        self.console = Console()
+
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.optimizer = optimizer
         self.criterion = criterion
         self.device = device
+        self.log_every_n_batches = log_every_n_batches
 
-        # Initialize Weights & Biases (W&B) with optional config
-        wandb.init(
-            project=project_name,
-            config=config  # Passing the config dictionary to W&B if provided
+        # Initialize scheduler and W&B
+        self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer=self.optimizer,
+            max_lr=0.01,
+            steps_per_epoch=len(train_loader),
+            epochs=10,
         )
+        wandb.init(project=project_name, config=config)
 
     def train_one_epoch(self):
-        """Train the model for one epoch and log results with TQDM and W&B."""
+        """Train the model for one epoch with tqdm and log results with rich."""
         self.model.train()
         running_loss = 0.0
+        output_list = []
+        label_list = []
 
-        # Initialize TQDM progress bar for training
+        # Using tqdm.rich for training progress bar
         train_progress = tqdm(self.train_loader, desc="Training", leave=False)
 
-        for images, labels in train_progress:
+        for batch_idx, (images, labels) in enumerate(train_progress):
             images, labels = images.to(self.device), labels.to(self.device)
 
-            # Debugging the shapes
-            print(f"Images shape: {images.shape}")   # Expected: [batch_size, 1, 500, 500]
-            print(f"Labels shape: {labels.shape}")   # Expected: [batch_size, 15]
-
-            # Zero the parameter gradients
+            # Training step
             self.optimizer.zero_grad()
-
-            # Forward pass
             outputs = self.model(images)
-
-            # Debugging the output shape
-            print(f"Outputs shape: {outputs.shape}") # Expected: [batch_size, 15]
-
             loss = self.criterion(outputs, labels)
-
-            # Backward pass and optimize
             loss.backward()
             self.optimizer.step()
+            self.scheduler.step()
 
-            running_loss += loss.item()
+            # Track batch loss
+            batch_loss = loss.item()
+            running_loss += batch_loss
+            if batch_idx % self.log_every_n_batches == 0:
+                wandb.log({"batch_loss": batch_loss})
 
-            # Update the TQDM progress bar
-            train_progress.set_postfix(loss=running_loss / (train_progress.n + 1))
+            # Update tqdm bar with average loss
+            train_progress.set_postfix(loss=running_loss / (batch_idx + 1))
 
-            # Log the loss for each batch to Weights & Biases
-            wandb.log({"batch_loss": loss.item()})
+            # Collect data for AUC - apply sigmoid for probability scores
+            sigmoid_outputs = torch.sigmoid(outputs)
+            output_list.extend(sigmoid_outputs.detach().cpu().numpy())
+            label_list.extend(labels.detach().cpu().numpy())
 
-        # Log epoch-level loss
+        # Epoch metrics
         epoch_loss = running_loss / len(self.train_loader)
-        wandb.log({"epoch_loss": epoch_loss})
-        print(f"Training Loss: {epoch_loss:.4f}")
+        epoch_auc = roc_auc_score(np.array(label_list), np.array(output_list))
+        wandb.log({"epoch_loss": epoch_loss, "train_auc": epoch_auc})
 
-        return epoch_loss
-
+        # Log results using the existing console
+        self.console.log(
+            f"[bold green]Training Loss: {epoch_loss:.4f}, AUC: {epoch_auc:.4f}[/bold green]"
+        )
+        return epoch_loss, epoch_auc
 
     def validate_one_epoch(self):
-        """Validate the model for one epoch and log results with TQDM and W&B."""
+        """Validate the model for one epoch with tqdm and log results with rich."""
         self.model.eval()
         val_loss = 0.0
+        output_list = []
+        label_list = []
 
-        # Initialize TQDM progress bar for validation
+        # Using tqdm.rich for validation progress bar
         val_progress = tqdm(self.val_loader, desc="Validation", leave=False)
 
         with torch.no_grad():
             for images, labels in val_progress:
                 images, labels = images.to(self.device), labels.to(self.device)
 
-                # Forward pass
+                # Validation step
                 outputs = self.model(images)
                 loss = self.criterion(outputs, labels)
                 val_loss += loss.item()
 
-        # Log validation loss to Weights & Biases
-        val_loss = val_loss / len(self.val_loader)
-        wandb.log({"val_loss": val_loss})
-        print(f"Validation Loss: {val_loss:.4f}")
+                # Apply sigmoid to get probabilities for AUC calculation
+                sigmoid_outputs = torch.sigmoid(outputs)
+                output_list.append(sigmoid_outputs.cpu())
+                label_list.append(labels.cpu())
 
-        return val_loss
+        # Calculate metrics
+        val_loss = val_loss / len(self.val_loader)
+        outputs_concat = torch.cat(output_list)
+        labels_concat = torch.cat(label_list)
+
+        try:
+            auc = roc_auc_score(
+                labels_concat.cpu().numpy(), outputs_concat.cpu().numpy()
+            )
+        except ValueError:
+            auc = None
+
+        wandb.log({"val_loss": val_loss, "val_auc": auc})
+
+        # Log results using the existing console
+        if auc:
+            self.console.log(
+                f"[bold magenta]Validation Loss: {val_loss:.4f}, AUC: {auc:.4f}[/bold magenta]"
+            )
+        else:
+            self.console.log(
+                f"[bold magenta]Validation Loss: {val_loss:.4f}, AUC: N/A[/bold magenta]"
+            )
+
+        return val_loss, auc
 
     def fit(self, epochs):
-        """Train and validate the model for the specified number of epochs."""
+        # Supress the warning
+        warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
+        """Train and validate the model for a specified number of epochs."""
+        # Run training & validation
         for epoch in range(epochs):
-            print(f"Epoch {epoch + 1}/{epochs}")
-            print('-' * 20)
+            self.console.log(f"[bold cyan]Epoch {epoch + 1}/{epochs}[/bold cyan]")
+            train_loss, train_auc = self.train_one_epoch()
+            val_loss, val_auc = self.validate_one_epoch()
 
-            # Train for one epoch
-            train_loss = self.train_one_epoch()
+            # Optionally log or save the model after each epoch
+            wandb.log(
+                {
+                    "epoch": epoch + 1,
+                    "train_loss": train_loss,
+                    "train_auc": train_auc,
+                    "val_loss": val_loss,
+                    "val_auc": val_auc,
+                }
+            )
 
-            # Validate for one epoch
-            val_loss = self.validate_one_epoch()
-
-            # Optionally, save model checkpoints after each epoch
+            # Save model checkpoint if desired
             torch.save(self.model.state_dict(), f"model_epoch_{epoch + 1}.pth")
 
-        print("Training complete.")
+        self.console.log("[bold cyan]Training complete.[/bold cyan]")

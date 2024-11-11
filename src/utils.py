@@ -82,28 +82,6 @@ def compute_class_weights(df, num_labels):
 
 #########################################################################################################
 
-# Custom weighted binary cross-entropy function for PyTorch
-def weighted_binary_crossentropy(class_weights):
-    """
-    Custom weighted binary cross-entropy for multi-label classification.
-    """
-    class_weights = torch.tensor(class_weights, dtype=torch.float32).to('cuda' if torch.cuda.is_available() else 'cpu')
-
-    def loss_fn(y_true, y_pred):
-        # Compute binary cross-entropy with logits
-        bce = F.binary_cross_entropy_with_logits(y_pred, y_true, reduction='none')
-
-        # Apply class weights (you may need to reshape or broadcast the weights here)
-        weights = class_weights * y_true + (1 - y_true)
-        weighted_bce = weights * bce
-
-        return weighted_bce.mean()
-
-    return loss_fn
-
-
-#########################################################################################################
-
 def analyze_label_combinations(df: pd.DataFrame, underrepresented_threshold: int = 2) -> pd.DataFrame:
     """
     Analyze the distribution of label combinations and find underrepresented label combinations in the dataset.
