@@ -1,11 +1,14 @@
-from rich.console import Console
-from tqdm.rich import tqdm
 import torch
 import wandb
+import config
 import warnings
-from sklearn.metrics import roc_auc_score
 import numpy as np
+from tqdm.rich import tqdm
+from rich.console import Console
 from tqdm import TqdmExperimentalWarning
+from sklearn.metrics import roc_auc_score
+
+epochs = config.EPOCHS
 
 
 class ICNTrainer:
@@ -40,7 +43,7 @@ class ICNTrainer:
             optimizer=self.optimizer,
             max_lr=0.01,
             steps_per_epoch=len(train_loader),
-            epochs=10,
+            epochs=epochs,
         )
         wandb.init(project=project_name, config=config)
 
