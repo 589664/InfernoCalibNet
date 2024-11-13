@@ -96,6 +96,7 @@ class PipelineManager:
                 padding=self.model.features[0][0].padding,
                 bias=False,
             )
+
             self.model.classifier[1] = nn.Linear(
                 self.model.classifier[1].in_features, num_classes
             )

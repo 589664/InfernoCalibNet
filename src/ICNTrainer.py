@@ -7,8 +7,10 @@ from tqdm.rich import tqdm
 from rich.console import Console
 from tqdm import TqdmExperimentalWarning
 from sklearn.metrics import roc_auc_score
+from torchmetrics.classification import MultilabelF1Score, MultilabelAUROC
 
 epochs = config.EPOCHS
+classes = config.NUM_CLASSES
 
 
 class ICNTrainer:
@@ -53,45 +55,76 @@ class ICNTrainer:
         running_loss = 0.0
         output_list = []
         label_list = []
+        # Initialize torchmetrics
+        f1_metric = MultilabelF1Score(num_labels=classes, average="macro").to(
+            self.device
+        )
+        auc_metric = MultilabelAUROC(num_labels=classes, average="macro").to(
+            self.device
+        )
 
         # Using tqdm.rich for training progress bar
         train_progress = tqdm(self.train_loader, desc="Training", leave=False)
 
+        # Training steps loop
         for batch_idx, (images, labels) in enumerate(train_progress):
             images, labels = images.to(self.device), labels.to(self.device)
 
-            # Training step
+            # Forward pass
             self.optimizer.zero_grad()
-            outputs = self.model(images)
-            loss = self.criterion(outputs, labels)
+            logits = self.model(images)
+            loss = self.criterion(logits, labels)  # BCEWithLogitsLoss
+
+            # Backward pass
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()
 
-            # Track batch loss
+            # Update running loss
             batch_loss = loss.item()
             running_loss += batch_loss
+
+            # Sigmoid activation for predictions where output is confidence scores/probabilities
+            sigmoid_outputs = torch.sigmoid(logits)
+
+            # Update metrics
+            f1_metric.update(sigmoid_outputs, labels.long())
+            auc_metric.update(sigmoid_outputs, labels.long())
+
+            # Log confidence scores for the first batch (or selectively)
+            if batch_idx == 0:  # Log only the first batch for brevity
+                wandb.log({"confidence_scores": sigmoid_outputs.detach().cpu().numpy()})
+
+            # Log batch loss to WandB
             if batch_idx % self.log_every_n_batches == 0:
                 wandb.log({"batch_loss": batch_loss})
 
             # Update tqdm bar with average loss
             train_progress.set_postfix(loss=running_loss / (batch_idx + 1))
 
-            # Collect data for AUC - apply sigmoid for probability scores
-            sigmoid_outputs = torch.sigmoid(outputs)
-            output_list.extend(sigmoid_outputs.detach().cpu().numpy())
-            label_list.extend(labels.detach().cpu().numpy())
-
         # Epoch metrics
         epoch_loss = running_loss / len(self.train_loader)
-        epoch_auc = roc_auc_score(np.array(label_list), np.array(output_list))
-        wandb.log({"epoch_loss": epoch_loss, "train_auc": epoch_auc})
+        epoch_f1 = f1_metric.compute()  # Compute the F1 score for the epoch
+        epoch_auc = auc_metric.compute()  # Compute the AUROC for the epoch
+
+        # Reset metrics for the next epoch
+        f1_metric.reset()
+        auc_metric.reset()
+
+        # Log metrics to WandB
+        wandb.log(
+            {
+                "epoch_loss": epoch_loss,
+                "train_f1": epoch_f1.item(),
+                "train_auc": epoch_auc.item(),
+            }
+        )
 
         # Log results using the existing console
         self.console.log(
             f"[bold green]Training Loss: {epoch_loss:.4f}, AUC: {epoch_auc:.4f}[/bold green]"
         )
-        return epoch_loss, epoch_auc
+        return epoch_loss, epoch_f1.item(), epoch_auc.item()
 
     def validate_one_epoch(self):
         """Validate the model for one epoch with tqdm and log results with rich."""
@@ -143,14 +176,19 @@ class ICNTrainer:
 
         return val_loss, auc
 
-    def fit(self, epochs):
+    def fit(self, epochs, early_stopping_patience=5):
+        """Train and validate the model for a specified number of epochs with early stopping."""
+
         # Supress the warning
         warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
-        """Train and validate the model for a specified number of epochs."""
+
         # Run training & validation
         for epoch in range(epochs):
             self.console.log(f"[bold cyan]Epoch {epoch + 1}/{epochs}[/bold cyan]")
-            train_loss, train_auc = self.train_one_epoch()
+            # Training
+            train_loss, train_f1, train_auc = self.train_one_epoch()
+
+            # Validation
             val_loss, val_auc = self.validate_one_epoch()
 
             # Optionally log or save the model after each epoch
