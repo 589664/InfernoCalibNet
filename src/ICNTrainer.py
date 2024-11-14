@@ -11,6 +11,7 @@ from torchmetrics.classification import MultilabelF1Score, MultilabelAUROC
 
 epochs = config.EPOCHS
 classes = config.NUM_CLASSES
+model_dir = config.MODEL_DIR
 
 
 class ICNTrainer:
@@ -84,16 +85,13 @@ class ICNTrainer:
             batch_loss = loss.item()
             running_loss += batch_loss
 
-            # Sigmoid activation for predictions where output is confidence scores/probabilities
+            # Sigmoid activation for predictions where output is
+            # confidence scores/probabilities per image in current batch
             sigmoid_outputs = torch.sigmoid(logits)
 
             # Update metrics
             f1_metric.update(sigmoid_outputs, labels.long())
             auc_metric.update(sigmoid_outputs, labels.long())
-
-            # Log confidence scores for the first batch (or selectively)
-            if batch_idx == 0:  # Log only the first batch for brevity
-                wandb.log({"confidence_scores": sigmoid_outputs.detach().cpu().numpy()})
 
             # Log batch loss to WandB
             if batch_idx % self.log_every_n_batches == 0:
@@ -126,6 +124,7 @@ class ICNTrainer:
         )
         return epoch_loss, epoch_f1.item(), epoch_auc.item()
 
+    # Inference
     def validate_one_epoch(self):
         """Validate the model for one epoch with tqdm and log results with rich."""
         self.model.eval()
@@ -182,9 +181,14 @@ class ICNTrainer:
         # Supress the warning
         warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 
+        patience_counter = 0  # Counter for early stopping
+        best_model_path = "best_model.pth"
+        best_val_loss = float("inf")  # Track the best validation loss
+
         # Run training & validation
         for epoch in range(epochs):
             self.console.log(f"[bold cyan]Epoch {epoch + 1}/{epochs}[/bold cyan]")
+
             # Training
             train_loss, train_f1, train_auc = self.train_one_epoch()
 
@@ -196,13 +200,36 @@ class ICNTrainer:
                 {
                     "epoch": epoch + 1,
                     "train_loss": train_loss,
+                    "train_f1": train_f1,
                     "train_auc": train_auc,
                     "val_loss": val_loss,
+                    # "val_f1": val_f1,
                     "val_auc": val_auc,
+                    "learning_rate": self.optimizer.param_groups[0][
+                        "lr"
+                    ],  # Log learning rate
                 }
             )
 
-            # Save model checkpoint if desired
-            torch.save(self.model.state_dict(), f"model_epoch_{epoch + 1}.pth")
+            # Save the model if validation loss improves
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                torch.save(self.model.state_dict(), model_dir / best_model_path)
+                self.console.log(
+                    f"[bold green]Validation loss improved. Model saved at epoch {epoch + 1}[/bold green]"
+                )
+                patience_counter = 0  # Reset patience counter
+            else:
+                patience_counter += 1
+
+            # Early stopping
+            if patience_counter >= early_stopping_patience:
+                self.console.log(
+                    f"[bold red]Early stopping triggered at epoch {epoch + 1}[/bold red]"
+                )
+                break
 
         self.console.log("[bold cyan]Training complete.[/bold cyan]")
+        self.console.log(
+            f"[bold green]Best validation loss: {best_val_loss:.4f}[/bold green]"
+        )

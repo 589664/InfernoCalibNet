@@ -5,7 +5,6 @@ from rich.console import Console
 # torch
 import torch
 import torch.nn as nn
-import torchvision.models as models
 from torch.utils.data import DataLoader
 from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 

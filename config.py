@@ -18,4 +18,4 @@ ROOT_DIR = Path(__file__).parent
 
 RAW_DIR = ROOT_DIR / "data" / "raw"
 PROCESSED_DIR = ROOT_DIR / "data" / "processed"
-MODEL_DIR = ROOT_DIR / "models"
+MODEL_DIR = ROOT_DIR / "data" / "models"
