@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class DynamicWeightedBCELoss(nn.Module):
     def __init__(self, pos_weight=None):
         """
@@ -11,7 +12,9 @@ class DynamicWeightedBCELoss(nn.Module):
         this will be used for weighting positive samples.
         """
         super(DynamicWeightedBCELoss, self).__init__()
-        self.pos_weight = pos_weight  # This will allow the option to use global class weights
+        self.pos_weight = (
+            pos_weight  # This will allow the option to use global class weights
+        )
 
     def forward(self, output, target, weights=None):
         """
@@ -25,11 +28,13 @@ class DynamicWeightedBCELoss(nn.Module):
         Returns:
         - Loss: The computed weighted BCE loss.
         """
-        output = output.clamp(min=1e-5, max=1-1e-5)  # Avoid log(0)
+        output = output.clamp(min=1e-5, max=1 - 1e-5)  # Avoid log(0)
         target = target.float()
 
         if weights is not None:
-            assert len(weights) == 2  # Ensure two weights are provided (positive, negative)
+            assert (
+                len(weights) == 2
+            )  # Ensure two weights are provided (positive, negative)
             beta_P, beta_N = weights
         else:
             # If no dynamic weights provided, use global pos_weight if available

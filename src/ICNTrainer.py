@@ -2,11 +2,9 @@ import torch
 import wandb
 import config
 import warnings
-import numpy as np
 from tqdm.rich import tqdm
 from rich.console import Console
 from tqdm import TqdmExperimentalWarning
-from sklearn.metrics import roc_auc_score
 from torchmetrics.classification import MultilabelF1Score, MultilabelAUROC
 
 epochs = config.EPOCHS

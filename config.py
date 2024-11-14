@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # Normalization values
@@ -19,3 +20,6 @@ ROOT_DIR = Path(__file__).parent
 RAW_DIR = ROOT_DIR / "data" / "raw"
 PROCESSED_DIR = ROOT_DIR / "data" / "processed"
 MODEL_DIR = ROOT_DIR / "data" / "models"
+
+# Directory for wandb files
+os.environ["WANDB_DIR"] = str(ROOT_DIR / "data")

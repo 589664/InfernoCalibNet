@@ -14,10 +14,17 @@ dependencies = [
   "scipy",
   "seaborn",
   "joblib",
-  "matplotlib"
+  "matplotlib",
+  "torch",
+  "wandb",
+  "rich",
+  "torchmetrics",
+  "InquirerPy",
+  "tqdm"
 ]
 requires-python = ">=3.11.9"
 description = "Calibrating neural networks with Bayesian nonparametric regression (Inferno) to quantify uncertainty and improve prediction reliability."
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+
