@@ -49,7 +49,7 @@ class PipelineManager:
             # Data preprocessing steps
             filtered_df = preprocess_metadata(
                 raw_dir / "xraysMD.csv",
-                raw_dir / "xrays",
+                raw_dir,
                 processed_dir / "xraysMD.csv",
             )
             train_df, test_df = distribution_df_split(
