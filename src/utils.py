@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 from PIL import Image
-import torch
-import torch.nn.functional as F
 from collections import Counter
+
 
 def load_image(image_path: str, img_size: int) -> Image.Image:
     """
@@ -16,9 +15,10 @@ def load_image(image_path: str, img_size: int) -> Image.Image:
     Returns:
         Image.Image: The processed grayscale and resized image.
     """
-    img = Image.open(image_path).convert('L')  # Convert to grayscale
+    img = Image.open(image_path).convert("L")  # Convert to grayscale
     img_resized = img.resize((img_size, img_size))  # Resize to square of size img_size
     return img_resized
+
 
 def compute_mean_std(image_paths: list[str], img_size: int) -> tuple[float, float]:
     """
@@ -35,13 +35,15 @@ def compute_mean_std(image_paths: list[str], img_size: int) -> tuple[float, floa
 
     for img_path in image_paths:
         img = load_image(img_path, img_size)
-        img_np = np.array(img).flatten()  # Convert image to a numpy array and flatten it
+        img_np = np.array(
+            img
+        ).flatten()  # Convert image to a numpy array and flatten it
 
         # Incrementally update the mean and variance
         n = img_np.size
         n_pixels += n
         mean_sum += np.sum(img_np)
-        variance_sum += np.sum((img_np - (mean_sum / n_pixels))**2)
+        variance_sum += np.sum((img_np - (mean_sum / n_pixels)) ** 2)
 
     # Compute the final mean
     mean = mean_sum / n_pixels
@@ -52,7 +54,9 @@ def compute_mean_std(image_paths: list[str], img_size: int) -> tuple[float, floa
 
     return mean, std
 
+
 #########################################################################################################
+
 
 def compute_class_weights(df, num_labels):
     """
@@ -69,7 +73,7 @@ def compute_class_weights(df, num_labels):
     label_counts = np.zeros(num_labels)
 
     # Iterate over the DataFrame and sum the label occurrences
-    for labels in df['MultiHotLabels']:
+    for labels in df["MultiHotLabels"]:
         label_counts += np.array(labels)  # Add the counts of each label
 
     # Total number of samples
@@ -80,9 +84,13 @@ def compute_class_weights(df, num_labels):
 
     return class_weights
 
+
 #########################################################################################################
 
-def analyze_label_combinations(df: pd.DataFrame, underrepresented_threshold: int = 2) -> pd.DataFrame:
+
+def analyze_label_combinations(
+    df: pd.DataFrame, underrepresented_threshold: int = 2
+) -> pd.DataFrame:
     """
     Analyze the distribution of label combinations and find underrepresented label combinations in the dataset.
     Return a DataFrame summarizing underrepresented combinations and the corresponding images.
@@ -96,31 +104,41 @@ def analyze_label_combinations(df: pd.DataFrame, underrepresented_threshold: int
     """
 
     # Extract relevant columns
-    label_combinations = df['Labels'].apply(lambda x: sorted(x))
+    label_combinations = df["Labels"].apply(lambda x: sorted(x))
 
     # Count occurrences of each unique label combination
     combination_counts = Counter(label_combinations.apply(tuple))
-    combination_stats = pd.DataFrame([(list(k), v) for k, v in combination_counts.items()], columns=['Label Combination', 'Count'])
+    combination_stats = pd.DataFrame(
+        [(list(k), v) for k, v in combination_counts.items()],
+        columns=["Label Combination", "Count"],
+    )
 
     # Identify underrepresented combinations
-    underrepresented_combinations = combination_stats[combination_stats['Count'] < underrepresented_threshold]
+    underrepresented_combinations = combination_stats[
+        combination_stats["Count"] < underrepresented_threshold
+    ]
 
     # Create a DataFrame to store image associations with underrepresented label combinations
-    images_by_combination = pd.DataFrame(columns=['Label Combination', 'ImageID'])
+    images_by_combination = pd.DataFrame(columns=["Label Combination", "ImageID"])
 
-    for combination in underrepresented_combinations['Label Combination']:
+    for combination in underrepresented_combinations["Label Combination"]:
         # Find all images associated with the underrepresented combination
-        matching_images = df[df['Labels'].apply(lambda x: sorted(x) == combination)]['ImageID']
+        matching_images = df[df["Labels"].apply(lambda x: sorted(x) == combination)][
+            "ImageID"
+        ]
 
         # Create a DataFrame of the underrepresented combination and its associated images
-        combination_image_df = pd.DataFrame({
-            'Label Combination': [combination] * len(matching_images),
-            'ImageID': matching_images
-        })
+        combination_image_df = pd.DataFrame(
+            {
+                "Label Combination": [combination] * len(matching_images),
+                "ImageID": matching_images,
+            }
+        )
 
         # Append to the main DataFrame
-        images_by_combination = pd.concat([images_by_combination, combination_image_df], ignore_index=True)
+        images_by_combination = pd.concat(
+            [images_by_combination, combination_image_df], ignore_index=True
+        )
 
     # Return statistics of combinations and the underrepresented combinations with corresponding images
     return combination_stats, images_by_combination
-
