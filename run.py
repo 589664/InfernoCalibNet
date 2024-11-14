@@ -1,14 +1,12 @@
-import time
 import config
 from InquirerPy import inquirer
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, BarColumn, TimeRemainingColumn
 
 # torch
 import torch
 import torch.nn as nn
-import torchvision.models as models
 from torch.utils.data import DataLoader
+from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 
 # custom
 from src.ICNTrainer import ICNTrainer
@@ -88,7 +86,7 @@ class PipelineManager:
             self.criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights_tensor)
 
             # Load and modify the EfficientNet B3 model
-            self.model = models.efficientnet_b3(pretrained=True)
+            self.model = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1)
             self.model.features[0][0] = nn.Conv2d(
                 1,
                 self.model.features[0][0].out_channels,
@@ -97,6 +95,7 @@ class PipelineManager:
                 padding=self.model.features[0][0].padding,
                 bias=False,
             )
+
             self.model.classifier[1] = nn.Linear(
                 self.model.classifier[1].in_features, num_classes
             )
