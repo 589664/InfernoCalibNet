@@ -54,8 +54,7 @@ class ICNTrainer:
         """Train the model for one epoch with tqdm and log results with rich."""
         self.model.train()
         running_loss = 0.0
-        output_list = []
-        label_list = []
+
         # Initialize torchmetrics
         f1_metric = MultilabelF1Score(num_labels=classes, average="macro").to(
             self.device
@@ -120,17 +119,24 @@ class ICNTrainer:
 
         # Log results using the existing console
         self.console.log(
-            f"[bold green]Training Loss: {epoch_loss:.4f}, AUC: {epoch_auc:.4f}[/bold green]"
+            f"[bold green]Training Loss: {epoch_loss:.4f}, F1 Score: {epoch_f1:.4f}, AUC: {epoch_auc:.4f}[/bold green]"
         )
+
         return epoch_loss, epoch_f1.item(), epoch_auc.item()
 
-    # Inference
+    # Inference/validation
     def validate_one_epoch(self):
         """Validate the model for one epoch with tqdm and log results with rich."""
         self.model.eval()
         val_loss = 0.0
-        output_list = []
-        label_list = []
+
+        # Initialize metrics from torchmetrics
+        f1_metric = MultilabelF1Score(num_labels=classes, average="macro").to(
+            self.device
+        )
+        auc_metric = MultilabelAUROC(num_labels=classes, average="macro").to(
+            self.device
+        )
 
         # Using tqdm.rich for validation progress bar
         val_progress = tqdm(self.val_loader, desc="Validation", leave=False)
@@ -139,41 +145,44 @@ class ICNTrainer:
             for images, labels in val_progress:
                 images, labels = images.to(self.device), labels.to(self.device)
 
-                # Validation step
+                # Forward pass and loss computation
                 outputs = self.model(images)
                 loss = self.criterion(outputs, labels)
                 val_loss += loss.item()
 
-                # Apply sigmoid to get probabilities for AUC calculation
+                # Apply sigmoid to logits to get probabilities
                 sigmoid_outputs = torch.sigmoid(outputs)
-                output_list.append(sigmoid_outputs.cpu())
-                label_list.append(labels.cpu())
 
-        # Calculate metrics
+                # Update metrics
+                f1_metric.update(sigmoid_outputs, labels.long())
+                auc_metric.update(sigmoid_outputs, labels.long())
+
+        # Aggregate metrics
+        f1_score = f1_metric.compute()
+        auc_score = auc_metric.compute()
+
+        # Normalize validation loss by the number of batches
         val_loss = val_loss / len(self.val_loader)
-        outputs_concat = torch.cat(output_list)
-        labels_concat = torch.cat(label_list)
 
-        try:
-            auc = roc_auc_score(
-                labels_concat.cpu().numpy(), outputs_concat.cpu().numpy()
-            )
-        except ValueError:
-            auc = None
+        # Log metrics to wandb
+        wandb.log(
+            {
+                "val_loss": val_loss,
+                "val_f1_score": f1_score.item(),
+                "val_auc": auc_score.item(),
+            }
+        )
 
-        wandb.log({"val_loss": val_loss, "val_auc": auc})
+        # Log results to console
+        self.console.log(
+            f"[bold magenta]Validation Loss: {val_loss:.4f}, F1 Score: {f1_score:.4f}, AUC: {auc_score:.4f}[/bold magenta]"
+        )
 
-        # Log results using the existing console
-        if auc:
-            self.console.log(
-                f"[bold magenta]Validation Loss: {val_loss:.4f}, AUC: {auc:.4f}[/bold magenta]"
-            )
-        else:
-            self.console.log(
-                f"[bold magenta]Validation Loss: {val_loss:.4f}, AUC: N/A[/bold magenta]"
-            )
+        # Reset metrics for the next epoch
+        f1_metric.reset()
+        auc_metric.reset()
 
-        return val_loss, auc
+        return val_loss, f1_score.item(), auc_score.item()
 
     def fit(self, epochs, early_stopping_patience=5):
         """Train and validate the model for a specified number of epochs with early stopping."""
@@ -193,7 +202,7 @@ class ICNTrainer:
             train_loss, train_f1, train_auc = self.train_one_epoch()
 
             # Validation
-            val_loss, val_auc = self.validate_one_epoch()
+            val_loss, val_f1, val_auc = self.validate_one_epoch()
 
             # Optionally log or save the model after each epoch
             wandb.log(
@@ -203,7 +212,7 @@ class ICNTrainer:
                     "train_f1": train_f1,
                     "train_auc": train_auc,
                     "val_loss": val_loss,
-                    # "val_f1": val_f1,
+                    "val_f1": val_f1,
                     "val_auc": val_auc,
                     "learning_rate": self.optimizer.param_groups[0][
                         "lr"

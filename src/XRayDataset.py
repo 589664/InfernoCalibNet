@@ -1,8 +1,8 @@
 import torch
-import numpy as np
 from .utils import load_image
 from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
+
 
 class XRayDataset(Dataset):
     def __init__(self, dataframe, image_dir, img_size, mean, std):
@@ -21,17 +21,21 @@ class XRayDataset(Dataset):
         self.std = std
 
         # Transformation to be applied (resize, convert to tensor, normalize)
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[self.mean], std=[self.std])  # Use computed mean/std
-        ])
+        self.transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[self.mean], std=[self.std]
+                ),  # Use computed mean/std
+            ]
+        )
 
     def __len__(self):
         return len(self.dataframe)
 
     def __getitem__(self, idx):
         # Get image path and labels
-        image_id = self.dataframe.iloc[idx]['ImageID']
+        image_id = self.dataframe.iloc[idx]["ImageID"]
         img_path = f"{self.image_dir}/{image_id}.png"  # Images in PNG format
 
         # Load image using the helper method and convert to grayscale
@@ -42,7 +46,8 @@ class XRayDataset(Dataset):
             image = self.transform(image)
 
         # Get the multi-hot encoded labels
-        labels = torch.tensor(self.dataframe.iloc[idx]['MultiHotLabels'], dtype=torch.float32)
+        labels = torch.tensor(
+            self.dataframe.iloc[idx]["MultiHotLabels"], dtype=torch.float32
+        )
 
         return image, labels
-

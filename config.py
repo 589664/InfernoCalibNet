@@ -10,8 +10,8 @@ BATCH_SIZE = 20
 EPOCHS = 10
 LEARNING_RATE = 0.001
 NUM_CLASSES = 15
-TRAIN_SIZE = 7000
-TEST_SIZE = 3000
+TRAIN_SIZE = 700
+TEST_SIZE = 100
 
 # Define paths relative to the root directory
 ROOT_DIR = Path(__file__).parent
