@@ -10,11 +10,11 @@ def preprocess_metadata(
 ) -> pd.DataFrame:
     """
     Preprocesses metadata from a CSV file and saves the result to another CSV file.
-    Filters rows based on the images present in the given folder.
+    Filters rows based on the images present in the given folder and stores the correct image paths.
 
     Args:
         csv_path (str): The path to the input CSV file containing metadata.
-        image_folder (str): The path to the folder containing the images.
+        image_folder (str): The path to the folder containing the images and subdirectories.
         save_path (str): The path where the preprocessed metadata will be saved.
 
     Returns:
@@ -33,22 +33,20 @@ def preprocess_metadata(
     ]
     filtered_df.columns = ["ImageID", "Labels", "Age", "Gender", "XrayView"]
 
-    # Get list of image names in the folder and it's sub's (without extensions)
-    image_files = {
-        os.path.splitext(file)[0]
+    # Build a mapping of ImageID to full path from image_folder and its subdirectories
+    image_id_to_path = {
+        os.path.splitext(file)[0]: os.path.join(root, file)
         for root, _, files in os.walk(image_folder)
         for file in files
         if file.endswith(".png")
     }
 
     # Clean the ImageID column (removing the .png extension if needed)
-    # Make an explicit copy of the DataFrame to avoid SettingWithCopyWarning
-    filtered_df.loc[:, "ImageID"] = filtered_df["ImageID"].str.replace(
-        ".png", "", regex=False
-    )
+    filtered_df.loc[:, "ImageID"] = filtered_df["ImageID"].str.replace(".png", "", regex=False)
 
-    # Filter the DataFrame to include only rows with image names found in the folder
-    filtered_df = filtered_df[filtered_df["ImageID"].isin(image_files)]
+    # Filter DataFrame to include only rows with matching images and add their full paths
+    filtered_df = filtered_df[filtered_df["ImageID"].isin(image_id_to_path.keys())]
+    filtered_df["ImagePath"] = filtered_df["ImageID"].map(image_id_to_path)
 
     # Split Labels and binarize them
     filtered_df["Labels"] = filtered_df["Labels"].apply(lambda x: x.split("|"))
@@ -166,6 +164,11 @@ def distribution_df_split(df: pd.DataFrame, train_size: int, test_size: int):
     """
     # Create a column that reflects the number of individual labels per sample
     df["NumLabels"] = df["Labels"].apply(len)
+
+    # Exclude groups with fewer than 2 samples
+    valid_counts = df["NumLabels"].value_counts()
+    valid_labels = valid_counts[valid_counts >= 2].index
+    df = df[df["NumLabels"].isin(valid_labels)]
 
     # Perform stratified sampling based on the number of labels present in each image
     train_df, test_df = train_test_split(

@@ -34,9 +34,8 @@ class XRayDataset(Dataset):
         return len(self.dataframe)
 
     def __getitem__(self, idx):
-        # Get image path and labels
-        image_id = self.dataframe.iloc[idx]["ImageID"]
-        img_path = f"{self.image_dir}/{image_id}.png"  # Images in PNG format
+        # Get the full image path directly from the dataframe
+        img_path = self.dataframe.iloc[idx]["ImagePath"]
 
         # Load image using the helper method and convert to grayscale
         image = load_image(img_path, self.img_size)
@@ -51,3 +50,4 @@ class XRayDataset(Dataset):
         )
 
         return image, labels
+
