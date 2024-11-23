@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 
 # custom
+from src.ModelInspector import ModelInspector
 from src.ICNTrainer import ICNTrainer
 from src.XRayDataset import XRayDataset
 from src.utils import compute_class_weights
@@ -133,6 +134,21 @@ class PipelineManager:
         trainer.fit(epochs=epochs)
         console.print("[bold blue]Model training complete![/bold blue]")
 
+    def inspect_model(self):
+        config = {
+            "model": self.model,
+            "model_path": model_dir / "best_model.pth",
+            "input_size": img_size,
+            "mean": mean,
+            "std": std,
+        }
+        inspector = ModelInspector(config)
+        weights, biases = inspector.get_class_weights_and_biases()
+        # print("Class Weights:", weights)
+        # print("Class Biases:", biases)
+        predictions = inspector.predict(raw_dir / "xrays" / "00000008_001.png")
+        print("Predictions:", predictions)
+
 
 def main():
     pipeline_manager = PipelineManager()
@@ -141,6 +157,7 @@ def main():
     options = {
         "Preprocess Data": pipeline_manager.preprocess_data,
         "Train Model": pipeline_manager.train_model,
+        "Inspect Model": pipeline_manager.inspect_model,
         "Quit": None,
     }
 

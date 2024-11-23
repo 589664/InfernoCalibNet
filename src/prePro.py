@@ -42,7 +42,9 @@ def preprocess_metadata(
     }
 
     # Clean the ImageID column (removing the .png extension if needed)
-    filtered_df.loc[:, "ImageID"] = filtered_df["ImageID"].str.replace(".png", "", regex=False)
+    filtered_df.loc[:, "ImageID"] = filtered_df["ImageID"].str.replace(
+        ".png", "", regex=False
+    )
 
     # Filter DataFrame to include only rows with matching images and add their full paths
     filtered_df = filtered_df[filtered_df["ImageID"].isin(image_id_to_path.keys())]
