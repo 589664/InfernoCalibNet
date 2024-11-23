@@ -23,6 +23,7 @@ batch_size = config.BATCH_SIZE
 num_classes = config.NUM_CLASSES
 learning_rate = config.LEARNING_RATE
 epochs = config.EPOCHS
+num_wrks = config.NUM_WORKERS
 
 # Paths to directories
 raw_dir = config.RAW_DIR
@@ -71,10 +72,10 @@ class PipelineManager:
                 std=std,
             )
             self.train_loader = DataLoader(
-                train_dataset, batch_size=batch_size, shuffle=True, num_workers=1
+                train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_wrks
             )
             self.val_loader = DataLoader(
-                val_dataset, batch_size=batch_size, shuffle=False, num_workers=1
+                val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_wrks
             )
             class_weights = compute_class_weights(train_df, num_classes)
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

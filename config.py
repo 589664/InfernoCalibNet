@@ -5,13 +5,21 @@ from pathlib import Path
 MEAN = 139.45 / 255.0
 STD = 61.93 / 255.0
 
+# Param optimizer variables
+DATASET_SIZE = 112121
+GPU_MEMORY = 16
+INPUT_IMAGE_SIZE = (300, 300)
+
 # Model and Data Parameters
 IMG_SIZE = 300
 BATCH_SIZE = 20
 EPOCHS = 10
 LEARNING_RATE = 0.001
 NUM_CLASSES = 15
+NUM_WORKERS = 4
+
 TRAIN_SIZE = 7000
+VAL_SIZE = 1000
 TEST_SIZE = 3000
 
 # Define paths relative to the root directory
