@@ -4,6 +4,8 @@ from collections import Counter
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
 
+from sklearn.utils import resample
+
 
 def preprocess_metadata(
     csv_path: str, image_folder: str, save_path: str
@@ -180,5 +182,62 @@ def distribution_df_split(df: pd.DataFrame, train_size: int, test_size: int):
     # Drop the helper 'NumLabels' column
     train_df.drop(columns=["NumLabels"], inplace=True)
     test_df.drop(columns=["NumLabels"], inplace=True)
+
+    return train_df, test_df
+
+
+#########################################################################################################
+
+
+# Modified controlled_balancing function to handle unhashable type: 'list'
+def controlled_balancing(
+    df: pd.DataFrame, target_ratios: dict, train_size: int, test_size: int
+):
+    """
+    Balance the dataset to achieve approximately the specified ratios for each label and split into training and testing sets.
+
+    Args:
+    - df (pd.DataFrame): DataFrame containing images and labels.
+    - target_ratios (dict): Dictionary specifying the target percentage for each label.
+    - train_size (int): Number of samples to include in the training set.
+    - test_size (int): Number of samples to include in the testing/validation set.
+
+    Returns:
+    - train_df (pd.DataFrame): Training set.
+    - test_df (pd.DataFrame): Testing/validation set.
+    """
+    balanced_dfs = []
+    total_count = len(df)
+
+    # Iterate over each label and the target ratio
+    for label, target_ratio in target_ratios.items():
+        # Filter rows that contain the label, handling the "Labels" column which contains lists
+        label_df = df[df["Labels"].apply(lambda x: isinstance(x, list) and label in x)]
+        target_count = int(total_count * target_ratio)
+
+        # Resample the filtered DataFrame to achieve the desired count
+        if len(label_df) < target_count:
+            # Oversample if there are fewer than desired
+            label_df = resample(
+                label_df, replace=True, n_samples=target_count, random_state=42
+            )
+        elif len(label_df) > target_count:
+            # Undersample if there are more than desired
+            label_df = resample(
+                label_df, replace=False, n_samples=target_count, random_state=42
+            )
+        else:
+            # If the count matches the target, keep as is
+            label_df = label_df.copy()
+
+        balanced_dfs.append(label_df)
+
+    # Combine all the balanced subsets and reset index
+    balanced_df = pd.concat(balanced_dfs).reset_index(drop=True)
+
+    # Split the balanced DataFrame into training and testing sets
+    train_df, test_df = train_test_split(
+        balanced_df, train_size=train_size, test_size=test_size, random_state=42
+    )
 
     return train_df, test_df

@@ -6,7 +6,7 @@ import config
 class ParamOpt:
     def __init__(self, ds_size=None, gpu_mem=None, img_size=None):
         # Assign values from config or use defaults if available, otherwise use a hardcoded default
-        self.ds_size = ds_size if ds_size else getattr(config, "DATASET_SIZE", 120000)
+        self.ds_size = ds_size if ds_size else getattr(config, "DATASET_SIZE", 100000)
         self.gpu_mem = gpu_mem if gpu_mem else getattr(config, "GPU_MEMORY", 16)
         self.img_size = (
             img_size if img_size else getattr(config, "INPUT_IMAGE_SIZE", (300, 300))

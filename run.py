@@ -13,7 +13,7 @@ from src.ModelInspector import ModelInspector
 from src.ICNTrainer import ICNTrainer
 from src.XRayDataset import XRayDataset
 from src.utils import compute_class_weights
-from src.prePro import preprocess_metadata, distribution_df_split
+from src.prePro import preprocess_metadata, distribution_df_split, controlled_balancing
 
 # Using constants from config
 mean = config.MEAN
@@ -24,6 +24,7 @@ num_classes = config.NUM_CLASSES
 learning_rate = config.LEARNING_RATE
 epochs = config.EPOCHS
 num_wrks = config.NUM_WORKERS
+dropout_rate = config.DROPOUT_RATE
 
 # Paths to directories
 raw_dir = config.RAW_DIR
@@ -54,9 +55,34 @@ class PipelineManager:
                 raw_dir,
                 processed_dir / "xraysMD.csv",
             )
-            train_df, test_df = distribution_df_split(
-                filtered_df, train_size=train_size, test_size=test_size
+
+            target_ratios = {
+                "Atelectasis": 0.08,  # Placeholder ratio: 8%
+                "Cardiomegaly": 0.05,  # Placeholder ratio: 5%
+                "Consolidation": 0.05,  # Placeholder ratio: 5%
+                "Edema": 0.03,  # Placeholder ratio: 3%
+                "Effusion": 0.08,  # Placeholder ratio: 8%
+                "Emphysema": 0.04,  # Placeholder ratio: 4%
+                "Fibrosis": 0.04,  # Placeholder ratio: 4%
+                "Hernia": 0.01,  # Placeholder ratio: 1%
+                "Infiltration": 0.10,  # Placeholder ratio: 10%
+                "Mass": 0.06,  # Placeholder ratio: 6%
+                "No Finding": 0.15,  # Placeholder ratio: 30%
+                "Nodule": 0.05,  # Placeholder ratio: 5%
+                "Pleural_Thickening": 0.04,  # Placeholder ratio: 4%
+                "Pneumonia": 0.05,  # Placeholder ratio: 5%
+                "Pneumothorax": 0.06,  # Placeholder ratio: 6%
+            }
+
+            # Apply the balancing function
+            train_df, test_df = controlled_balancing(
+                filtered_df, target_ratios, train_size, test_size
             )
+
+            # train_df, test_df = distribution_df_split(
+            #     balanced_df, train_size=train_size, test_size=test_size
+            # )
+
             train_dataset = XRayDataset(
                 dataframe=train_df,
                 image_dir=raw_dir / "xrays",
@@ -64,6 +90,7 @@ class PipelineManager:
                 mean=mean,
                 std=std,
             )
+
             val_dataset = XRayDataset(
                 dataframe=test_df,
                 image_dir=raw_dir / "xrays",
@@ -71,13 +98,17 @@ class PipelineManager:
                 mean=mean,
                 std=std,
             )
+
             self.train_loader = DataLoader(
                 train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_wrks
             )
+
             self.val_loader = DataLoader(
                 val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_wrks
             )
+
             class_weights = compute_class_weights(train_df, num_classes)
+            print(class_weights)
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             torch.cuda.empty_cache()
 
@@ -89,6 +120,7 @@ class PipelineManager:
 
             # Load and modify the EfficientNet B3 model
             self.model = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1)
+
             self.model.features[0][0] = nn.Conv2d(
                 1,
                 self.model.features[0][0].out_channels,
@@ -98,9 +130,13 @@ class PipelineManager:
                 bias=False,
             )
 
-            self.model.classifier[1] = nn.Linear(
-                self.model.classifier[1].in_features, num_classes
+            self.model.classifier = nn.Sequential(
+                nn.Dropout(dropout_rate),  # Dropout layer for regularization
+                nn.Linear(
+                    self.model.classifier[1].in_features, num_classes
+                ),  # Output layer for final predictions
             )
+
             self.model = self.model.to(self.device)
 
             # Set up the optimizer
