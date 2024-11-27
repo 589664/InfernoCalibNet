@@ -1,10 +1,12 @@
 import os
 import pandas as pd
+import numpy as np
 from collections import Counter
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from sklearn.utils import resample
+from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 
 
 def preprocess_metadata(
@@ -153,91 +155,58 @@ def calculate_balanced_label_statistics(
 #########################################################################################################
 
 
-def distribution_df_split(df: pd.DataFrame, train_size: int, test_size: int):
-    """
-    Split the dataset while maintaining the distribution of individual labels rather than full combinations.
+def split_data(
+    df: pd.DataFrame,
+    train_ratio: float,
+    val_ratio: float,
+    test_ratio: float,
+    no_finding_ratio: float = 0.2,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
-    Args:
-    - df (pd.DataFrame): The full dataset containing the ImageID, Labels, and other metadata.
-    - train_size (int): Number of samples to include in the training set.
-    - test_size (int): Number of samples to include in the testing/validation set.
+    # Check if the sum of the ratios is equal to 1.0
+    if not abs((train_ratio + val_ratio + test_ratio) - 1.0) < 1e-5:
+        raise ValueError("Ratios must sum to 1.0")
 
-    Returns:
-    - train_df (pd.DataFrame): Training set.
-    - test_df (pd.DataFrame): Testing/validation set.
-    """
-    # Create a column that reflects the number of individual labels per sample
-    df["NumLabels"] = df["Labels"].apply(len)
-
-    # Exclude groups with fewer than 2 samples
-    valid_counts = df["NumLabels"].value_counts()
-    valid_labels = valid_counts[valid_counts >= 2].index
-    df = df[df["NumLabels"].isin(valid_labels)]
-
-    # Perform stratified sampling based on the number of labels present in each image
-    train_df, test_df = train_test_split(
-        df, train_size=train_size, test_size=test_size, stratify=df["NumLabels"]
+    # Separate 'No Finding' labels from others
+    no_find = df[df["Labels"].apply(lambda x: "No Finding" in x)].reset_index(drop=True)
+    others = df[df["Labels"].apply(lambda x: "No Finding" not in x)].reset_index(
+        drop=True
     )
 
-    # Drop the helper 'NumLabels' column
-    train_df.drop(columns=["NumLabels"], inplace=True)
-    test_df.drop(columns=["NumLabels"], inplace=True)
-
-    return train_df, test_df
-
-
-#########################################################################################################
-
-
-# Modified controlled_balancing function to handle unhashable type: 'list'
-def controlled_balancing(
-    df: pd.DataFrame, target_ratios: dict, train_size: int, test_size: int
-):
-    """
-    Balance the dataset to achieve approximately the specified ratios for each label and split into training and testing sets.
-
-    Args:
-    - df (pd.DataFrame): DataFrame containing images and labels.
-    - target_ratios (dict): Dictionary specifying the target percentage for each label.
-    - train_size (int): Number of samples to include in the training set.
-    - test_size (int): Number of samples to include in the testing/validation set.
-
-    Returns:
-    - train_df (pd.DataFrame): Training set.
-    - test_df (pd.DataFrame): Testing/validation set.
-    """
-    balanced_dfs = []
-    total_count = len(df)
-
-    # Iterate over each label and the target ratio
-    for label, target_ratio in target_ratios.items():
-        # Filter rows that contain the label, handling the "Labels" column which contains lists
-        label_df = df[df["Labels"].apply(lambda x: isinstance(x, list) and label in x)]
-        target_count = int(total_count * target_ratio)
-
-        # Resample the filtered DataFrame to achieve the desired count
-        if len(label_df) < target_count:
-            # Oversample if there are fewer than desired
-            label_df = resample(
-                label_df, replace=True, n_samples=target_count, random_state=42
-            )
-        elif len(label_df) > target_count:
-            # Undersample if there are more than desired
-            label_df = resample(
-                label_df, replace=False, n_samples=target_count, random_state=42
-            )
-        else:
-            # If the count matches the target, keep as is
-            label_df = label_df.copy()
-
-        balanced_dfs.append(label_df)
-
-    # Combine all the balanced subsets and reset index
-    balanced_df = pd.concat(balanced_dfs).reset_index(drop=True)
-
-    # Split the balanced DataFrame into training and testing sets
-    train_df, test_df = train_test_split(
-        balanced_df, train_size=train_size, test_size=test_size, random_state=42
+    # Reduce the number of 'No Finding' samples to the target count
+    target_count = int(len(df) * no_finding_ratio)
+    reduced_no_find = (
+        no_find.sample(n=target_count, random_state=42)
+        if len(no_find) > target_count
+        else no_find
     )
 
-    return train_df, test_df
+    # Combine the reduced 'No Finding' set with the other labels
+    balanced_df = pd.concat([reduced_no_find, others]).reset_index(drop=True)
+
+    # Create a list of all unique labels in the dataset
+    labels = list(set([lbl for lbl_list in balanced_df["Labels"] for lbl in lbl_list]))
+    # Convert the labels to a multilabel binary format for stratification
+    multilabels = pd.DataFrame(
+        [{lbl: (lbl in row) for lbl in labels} for row in balanced_df["Labels"]]
+    )
+
+    # Split the data into training and temporary sets (for validation and test)
+    msss = MultilabelStratifiedShuffleSplit(
+        n_splits=1, test_size=(val_ratio + test_ratio), random_state=42
+    )
+    train_idx, temp_idx = next(msss.split(balanced_df, multilabels))
+    train_df = balanced_df.iloc[train_idx].reset_index(drop=True)
+    temp_df = balanced_df.iloc[temp_idx].reset_index(drop=True)
+    temp_multilabels = multilabels.iloc[temp_idx].reset_index(drop=True)
+
+    # Split the temporary set into validation and test sets
+    val_size = val_ratio / (val_ratio + test_ratio)
+    msss_temp = MultilabelStratifiedShuffleSplit(
+        n_splits=1, test_size=(1 - val_size), random_state=42
+    )
+    val_idx, test_idx = next(msss_temp.split(temp_df, temp_multilabels))
+    val_df = temp_df.iloc[val_idx].reset_index(drop=True)
+    test_df = temp_df.iloc[test_idx].reset_index(drop=True)
+
+    return train_df, val_df, test_df

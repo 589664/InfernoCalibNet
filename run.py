@@ -12,8 +12,8 @@ from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 from src.ModelInspector import ModelInspector
 from src.ICNTrainer import ICNTrainer
 from src.XRayDataset import XRayDataset
-from src.utils import compute_class_weights
-from src.prePro import preprocess_metadata, distribution_df_split, controlled_balancing
+from src.utils import compute_class_weights, print_label_statistics
+from src.prePro import preprocess_metadata, split_data
 
 # Using constants from config
 mean = config.MEAN
@@ -30,8 +30,11 @@ dropout_rate = config.DROPOUT_RATE
 raw_dir = config.RAW_DIR
 processed_dir = config.PROCESSED_DIR
 model_dir = config.MODEL_DIR
+
 train_size = config.TRAIN_SIZE
+val_size = config.VAL_SIZE
 test_size = config.TEST_SIZE
+disease_classes = config.DISEASE_CLASSES
 
 # Initialize Rich console
 console = Console()
@@ -56,32 +59,27 @@ class PipelineManager:
                 processed_dir / "xraysMD.csv",
             )
 
-            target_ratios = {
-                "Atelectasis": 0.08,  # Placeholder ratio: 8%
-                "Cardiomegaly": 0.05,  # Placeholder ratio: 5%
-                "Consolidation": 0.05,  # Placeholder ratio: 5%
-                "Edema": 0.03,  # Placeholder ratio: 3%
-                "Effusion": 0.08,  # Placeholder ratio: 8%
-                "Emphysema": 0.04,  # Placeholder ratio: 4%
-                "Fibrosis": 0.04,  # Placeholder ratio: 4%
-                "Hernia": 0.01,  # Placeholder ratio: 1%
-                "Infiltration": 0.10,  # Placeholder ratio: 10%
-                "Mass": 0.06,  # Placeholder ratio: 6%
-                "No Finding": 0.15,  # Placeholder ratio: 30%
-                "Nodule": 0.05,  # Placeholder ratio: 5%
-                "Pleural_Thickening": 0.04,  # Placeholder ratio: 4%
-                "Pneumonia": 0.05,  # Placeholder ratio: 5%
-                "Pneumothorax": 0.06,  # Placeholder ratio: 6%
-            }
-
-            # Apply the balancing function
-            train_df, test_df = controlled_balancing(
-                filtered_df, target_ratios, train_size, test_size
+            # Split the data into train, validation, and test sets
+            train_df, val_df, test_df = split_data(
+                filtered_df,
+                train_ratio=train_size,
+                val_ratio=val_size,
+                test_ratio=test_size,
+                no_finding_ratio=0.10,
             )
 
-            # train_df, test_df = distribution_df_split(
-            #     balanced_df, train_size=train_size, test_size=test_size
-            # )
+            # Print label statistics for each set
+            all_labels = list(
+                set([label for labels in filtered_df["Labels"] for label in labels])
+            )
+            print("\Initial Set Label Statistics:")
+            print_label_statistics(filtered_df, all_labels)
+            print("\nTraining Set Label Statistics:")
+            print_label_statistics(train_df, all_labels)
+            print("\nValidation Set Label Statistics:")
+            print_label_statistics(val_df, all_labels)
+            print("\nTest Set Label Statistics:")
+            print_label_statistics(test_df, all_labels)
 
             train_dataset = XRayDataset(
                 dataframe=train_df,
@@ -92,7 +90,7 @@ class PipelineManager:
             )
 
             val_dataset = XRayDataset(
-                dataframe=test_df,
+                dataframe=val_df,
                 image_dir=raw_dir / "xrays",
                 img_size=img_size,
                 mean=mean,
@@ -107,8 +105,29 @@ class PipelineManager:
                 val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_wrks
             )
 
-            class_weights = compute_class_weights(train_df, num_classes)
-            print(class_weights)
+            class_weights, weights_by_label, label_counts = compute_class_weights(
+                train_df, disease_classes
+            )
+
+            # Print results in a cleaner format
+            print("Class Weights:")
+            for label, weight in weights_by_label.items():
+                print(f"  {label}: {weight:.4f}")
+
+            # Print label counts in a table-like format
+            print("\nLabel Counts:")
+            print(f"{'Label':<20} {'Positive Count':<15} {'Negative Count':<15}")
+            print("-" * 50)
+            for label, counts in label_counts.items():
+                print(
+                    f"{label:<20} {counts['positive_count']:<15} {counts['negative_count']:<15}"
+                )
+
+            # Save DataFrame to a CSV file in a given location
+            output_csv_path = "data/raw/train.csv"
+            train_df.to_csv(output_csv_path, index=False)
+            print(f"\nDataFrame saved to {output_csv_path}")
+
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             torch.cuda.empty_cache()
 
@@ -183,8 +202,8 @@ class PipelineManager:
         weights, biases = inspector.get_class_weights_and_biases()
         # print("Class Weights:", weights)
         # print("Class Biases:", biases)
-        predictions = inspector.predict(raw_dir / "xrays" / "00000008_001.png")
-        print("Predictions:", predictions)
+        # predictions = inspector.predict(raw_dir / "xrays" / "00000008_001.png")
+        # print("Predictions:", predictions)
 
 
 def main():

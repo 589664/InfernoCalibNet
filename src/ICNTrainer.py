@@ -10,6 +10,7 @@ from torchmetrics.classification import MultilabelF1Score, MultilabelAUROC
 epochs = config.EPOCHS
 classes = config.NUM_CLASSES
 model_dir = config.MODEL_DIR
+drop_pat = config.DROPPUT_PATIENCE
 
 
 class ICNTrainer:
@@ -182,7 +183,7 @@ class ICNTrainer:
 
         return val_loss, f1_score.item(), auc_score.item()
 
-    def fit(self, epochs, early_stopping_patience=5):
+    def fit(self, epochs, early_stopping_patience=drop_pat):
         """Train and validate the model for a specified number of epochs with early stopping."""
 
         # Supress the warning

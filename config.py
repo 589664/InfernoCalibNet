@@ -13,15 +13,37 @@ INPUT_IMAGE_SIZE = (300, 300)
 # Model and Data Parameters
 IMG_SIZE = 300
 BATCH_SIZE = 20
-EPOCHS = 50
+EPOCHS = 64
 LEARNING_RATE = 0.0001
 NUM_CLASSES = 15
 NUM_WORKERS = 4
 DROPOUT_RATE = 0.3
 
-TRAIN_SIZE = 7000
-TEST_SIZE = 3000
-VAL_SIZE = 1000
+TRAIN_SIZE = 0.7
+VAL_SIZE = 0.15
+TEST_SIZE = 0.15
+
+DROPPUT_PATIENCE = 10
+
+# Target ratios for different conditions (in percentage as decimal)
+DISEASE_CLASSES = {
+    "Atelectasis": 0.08,
+    "Cardiomegaly": 0.05,
+    "Consolidation": 0.05,
+    "Edema": 0.03,
+    "Effusion": 0.08,
+    "Emphysema": 0.04,
+    "Fibrosis": 0.04,
+    "Hernia": 0.01,
+    "Infiltration": 0.10,
+    "Mass": 0.06,
+    "No Finding": 0.15,
+    "Nodule": 0.05,
+    "Pleural_Thickening": 0.04,
+    "Pneumonia": 0.05,
+    "Pneumothorax": 0.06,
+}
+
 
 # Define paths relative to the root directory
 ROOT_DIR = Path(__file__).parent

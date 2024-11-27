@@ -50,4 +50,3 @@ class XRayDataset(Dataset):
         )
 
         return image, labels
-

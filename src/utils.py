@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from PIL import Image
-from collections import Counter
 
 
 def load_image(image_path: str, img_size: int) -> Image.Image:
@@ -58,87 +57,85 @@ def compute_mean_std(image_paths: list[str], img_size: int) -> tuple[float, floa
 #########################################################################################################
 
 
-def compute_class_weights(df, num_labels):
+def compute_class_weights(df: pd.DataFrame, disease_classes: dict):
     """
-    Compute class weights for multi-label classification from a DataFrame.
+    Compute class weights for multi-label classification using multi-hot labels.
 
     Args:
-    - df (pd.DataFrame): The DataFrame containing the dataset with a 'MultiHotLabels' column.
-    - num_labels (int): The number of labels/classes in the dataset (size of the multi-hot vector).
+    - df (pd.DataFrame): DataFrame containing multi-hot labels in the 'MultiHotLabels' column.
+    - disease_classes (dict): Dictionary containing disease class names and their target ratios.
 
     Returns:
-    - class_weights (np.array): Array of computed weights for each label/class.
+    - class_weights (torch.Tensor): Tensor of weights for each class in the format expected by BCEWithLogitsLoss.
+    - weights_by_label (dict): Dictionary of weights mapped to each disease label.
+    - label_counts (dict): Dictionary containing positive and negative counts for each disease label.
     """
-    # Initialize an array to hold the counts of each label
-    label_counts = np.zeros(num_labels)
+    import torch
 
-    # Iterate over the DataFrame and sum the label occurrences
-    for labels in df["MultiHotLabels"]:
-        label_counts += np.array(labels)  # Add the counts of each label
+    # Extract the multi-hot labels
+    labels = np.array(df["MultiHotLabels"].tolist())
 
     # Total number of samples
     total_samples = len(df)
 
-    # Compute class weights based on the formula: Total samples / (num_labels * count of each label)
-    class_weights = total_samples / (num_labels * label_counts)
+    # Calculate the positive counts for each class
+    positive_counts = labels.sum(axis=0)
 
-    return class_weights
+    # Calculate the negative counts for each class
+    negative_counts = total_samples - positive_counts
+
+    # Calculate the weights for each class
+    class_weights = [
+        (
+            float(negative_counts[i] / positive_counts[i])
+            if positive_counts[i] > 0
+            else 1.0
+        )
+        for i in range(len(positive_counts))
+    ]
+
+    # Convert the class weights to a torch tensor for BCEWithLogitsLoss
+    class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
+
+    # Create a dictionary with the disease class names and their corresponding weights
+    weights_by_label = {
+        label.lower(): class_weights[idx]
+        for idx, label in enumerate(disease_classes.keys())
+    }
+
+    # Create a dictionary with the positive and negative counts for each disease label
+    label_counts = {
+        label.lower(): {
+            "positive_count": int(positive_counts[idx]),
+            "negative_count": int(negative_counts[idx]),
+        }
+        for idx, label in enumerate(disease_classes.keys())
+    }
+
+    return class_weights_tensor, weights_by_label, label_counts
 
 
 #########################################################################################################
 
 
-def analyze_label_combinations(
-    df: pd.DataFrame, underrepresented_threshold: int = 2
-) -> pd.DataFrame:
+def print_label_statistics(df: pd.DataFrame, all_labels: list):
     """
-    Analyze the distribution of label combinations and find underrepresented label combinations in the dataset.
-    Return a DataFrame summarizing underrepresented combinations and the corresponding images.
+    Print the statistics of label representation in percentage for a given DataFrame.
 
     Args:
-    - df (pd.DataFrame): Input DataFrame with 'MultiHotLabels' as multi-hot encoded arrays and 'ImageID'.
-    - underrepresented_threshold (int): Minimum number of instances for a label combination to not be considered underrepresented.
-
-    Returns:
-    - pd.DataFrame: A DataFrame summarizing label combination statistics and the images associated with underrepresented combinations.
+    - df (pd.DataFrame): DataFrame containing images and labels.
+    - all_labels (list): List of all possible labels in the dataset.
     """
+    total_count = len(df)
+    label_counts = {label: 0 for label in all_labels}
 
-    # Extract relevant columns
-    label_combinations = df["Labels"].apply(lambda x: sorted(x))
+    for labels in df["Labels"]:
+        for label in labels:
+            if label in label_counts:
+                label_counts[label] += 1
 
-    # Count occurrences of each unique label combination
-    combination_counts = Counter(label_combinations.apply(tuple))
-    combination_stats = pd.DataFrame(
-        [(list(k), v) for k, v in combination_counts.items()],
-        columns=["Label Combination", "Count"],
-    )
-
-    # Identify underrepresented combinations
-    underrepresented_combinations = combination_stats[
-        combination_stats["Count"] < underrepresented_threshold
-    ]
-
-    # Create a DataFrame to store image associations with underrepresented label combinations
-    images_by_combination = pd.DataFrame(columns=["Label Combination", "ImageID"])
-
-    for combination in underrepresented_combinations["Label Combination"]:
-        # Find all images associated with the underrepresented combination
-        matching_images = df[df["Labels"].apply(lambda x: sorted(x) == combination)][
-            "ImageID"
-        ]
-
-        # Create a DataFrame of the underrepresented combination and its associated images
-        combination_image_df = pd.DataFrame(
-            {
-                "Label Combination": [combination] * len(matching_images),
-                "ImageID": matching_images,
-            }
-        )
-
-        # Append to the main DataFrame
-        images_by_combination = pd.concat(
-            [images_by_combination, combination_image_df], ignore_index=True
-        )
-
-    # Return statistics of combinations and the underrepresented combinations with corresponding images
-    return combination_stats, images_by_combination
+    print(f"{'Label':<20} {'Count':<10} {'Percentage (%)':<15}")
+    print("-" * 50)
+    for label, count in label_counts.items():
+        percentage = (count / total_count) * 100
+        print(f"{label:<20} {count:<10} {percentage:<15.2f}")
