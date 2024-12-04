@@ -9,10 +9,9 @@ from torch.utils.data import DataLoader
 from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 
 # custom
-from src.ModelInspector import ModelInspector
 from src.ICNTrainer import ICNTrainer
 from src.XRayDataset import XRayDataset
-from src.utils import compute_class_weights, print_label_statistics
+from src.ModelInspector import ModelInspector
 from src.prePro import preprocess_metadata, split_data
 
 # Using constants from config
@@ -72,14 +71,6 @@ class PipelineManager:
             all_labels = list(
                 set([label for labels in filtered_df["Labels"] for label in labels])
             )
-            print("\Initial Set Label Statistics:")
-            print_label_statistics(filtered_df, all_labels)
-            print("\nTraining Set Label Statistics:")
-            print_label_statistics(train_df, all_labels)
-            print("\nValidation Set Label Statistics:")
-            print_label_statistics(val_df, all_labels)
-            print("\nTest Set Label Statistics:")
-            print_label_statistics(test_df, all_labels)
 
             train_dataset = XRayDataset(
                 dataframe=train_df,
@@ -104,24 +95,6 @@ class PipelineManager:
             self.val_loader = DataLoader(
                 val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_wrks
             )
-
-            class_weights, weights_by_label, label_counts = compute_class_weights(
-                train_df, disease_classes
-            )
-
-            # Print results in a cleaner format
-            print("Class Weights:")
-            for label, weight in weights_by_label.items():
-                print(f"  {label}: {weight:.4f}")
-
-            # Print label counts in a table-like format
-            print("\nLabel Counts:")
-            print(f"{'Label':<20} {'Positive Count':<15} {'Negative Count':<15}")
-            print("-" * 50)
-            for label, counts in label_counts.items():
-                print(
-                    f"{label:<20} {counts['positive_count']:<15} {counts['negative_count']:<15}"
-                )
 
             # Save DataFrame to a CSV file in a given location
             output_csv_path = "data/raw/train.csv"

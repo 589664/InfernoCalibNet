@@ -1,5 +1,5 @@
 import torch
-from .utils import load_image
+from .utils.Tools import load_image
 from torchvision import transforms
 from torch.utils.data import Dataset
 

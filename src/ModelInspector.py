@@ -1,6 +1,6 @@
 import torch
 from torchvision import transforms
-from .utils import load_image  # Importing load_image directly from utils
+from .utils.Tools import load_image  # Importing load_image directly from utils
 
 
 class ModelInspector:
