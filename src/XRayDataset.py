@@ -1,51 +1,52 @@
 import torch
+import pandas as pd
+from PIL import Image
 from .utils.Tools import load_image
 from torchvision import transforms
 from torch.utils.data import Dataset
 
 
 class XRayDataset(Dataset):
-    def __init__(self, dataframe, image_dir, img_size, mean, std):
-        """
-        Args:
-        - dataframe (pd.DataFrame): DataFrame containing ImageID, Labels, and other metadata.
-        - image_dir (str): Directory with all the images.
-        - img_size (int): The size to which all images will be resized (img_size x img_size).
-        - mean (float): The mean pixel value for normalization.
-        - std (float): The standard deviation of pixel values for normalization.
-        """
-        self.dataframe = dataframe
-        self.image_dir = image_dir
-        self.img_size = img_size
-        self.mean = mean
-        self.std = std
+    def __init__(
+        self,
+        dataframe: pd.DataFrame,
+        image_dir: str,
+        img_size: int,
+        mean: tuple[float, float, float],
+        std: tuple[float, float, float],
+    ):
+        self.dataframe: pd.DataFrame = dataframe
+        self.image_dir: str = image_dir
+        self.img_size: int = img_size
+        self.mean: tuple[float, float, float] = mean
+        self.std: tuple[float, float, float] = std
 
         # Transformation to be applied (resize, convert to tensor, normalize)
-        self.transform = transforms.Compose(
+        self.transform: transforms.Compose = transforms.Compose(
             [
                 transforms.ToTensor(),
                 transforms.Normalize(
-                    mean=[self.mean], std=[self.std]
-                ),  # Use computed mean/std
+                    mean=self.mean, std=self.std
+                ),  # Use computed mean/std for RGB
             ]
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataframe)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         # Get the full image path directly from the dataframe
-        img_path = self.dataframe.iloc[idx]["ImagePath"]
+        img_path: str = self.dataframe.iloc[idx]["ImagePath"]
 
-        # Load image using the helper method and convert to grayscale
-        image = load_image(img_path, self.img_size)
+        # Load image using the helper method
+        image: Image.Image = load_image(img_path, self.img_size)
 
         # Convert to numpy array and apply the transformations
         if self.transform:
-            image = self.transform(image)
+            image: torch.Tensor = self.transform(image)
 
         # Get the multi-hot encoded labels
-        labels = torch.tensor(
+        labels: torch.Tensor = torch.tensor(
             self.dataframe.iloc[idx]["MultiHotLabels"], dtype=torch.float32
         )
 

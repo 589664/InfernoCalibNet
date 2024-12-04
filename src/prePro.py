@@ -1,11 +1,6 @@
 import os
 import pandas as pd
-import numpy as np
-from collections import Counter
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
-
-from sklearn.utils import resample
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 
 
@@ -72,84 +67,6 @@ def preprocess_metadata(
     filtered_df.to_csv(save_path, index=False)
 
     return filtered_df
-
-
-#########################################################################################################
-
-
-def calculate_balanced_label_statistics(
-    df: pd.DataFrame, target_percentage: float = 3.5
-) -> pd.DataFrame:
-    """
-    Calculates label statistics and determines augmentation factors for underrepresented labels.
-
-    Args:
-        df (pd.DataFrame): The preprocessed metadata DataFrame containing 'Labels'.
-        target_percentage (float): The target percentage for balancing labels (default: 3.5%).
-
-    Returns:
-        pd.DataFrame: A DataFrame with statistics and augmentation factors for each label.
-    """
-    no_flip_labels = ["Cardiomegaly", "Pneumothorax"]
-
-    # Flatten labels list to count individual occurrences
-    all_labels = [label for labels_list in df["Labels"] for label in labels_list]
-    label_counts = Counter(all_labels)
-
-    # Calculate total images
-    total_images = len(df)
-
-    # Create DataFrame for label statistics
-    label_stats = pd.DataFrame(
-        {
-            "Label": list(label_counts.keys()),
-            "Label_Occurrence": list(label_counts.values()),
-        }
-    )
-
-    # Calculate label occurrence percentage
-    label_stats["Label_Occurrence_Percentage"] = (
-        label_stats["Label_Occurrence"] / label_stats["Label_Occurrence"].sum()
-    ) * 100
-
-    # Calculate augmentation factor based on underrepresentation
-    def calculate_augmentation(label, percentage):
-        if label in no_flip_labels:
-            # For labels that can't be flipped
-            return (
-                max(1, min(2, int(target_percentage / percentage)))
-                if percentage < target_percentage
-                else 0
-            )
-        else:
-            # For labels that can be flipped
-            return (
-                max(1, min(5, int(target_percentage / percentage)))
-                if percentage < target_percentage
-                else 0
-            )
-
-    label_stats["Augmentation_Factor"] = label_stats.apply(
-        lambda row: calculate_augmentation(
-            row["Label"], row["Label_Occurrence_Percentage"]
-        ),
-        axis=1,
-    )
-
-    # Drop decimals from Label_Occurrence and Augmentation_Factor
-    label_stats["Label_Occurrence"] = label_stats["Label_Occurrence"].astype(int)
-    label_stats["Augmentation_Factor"] = label_stats["Augmentation_Factor"].astype(int)
-
-    # Add total columns for sum of label counts and percentages
-    label_stats.loc["Total"] = label_stats[
-        ["Label_Occurrence", "Label_Occurrence_Percentage"]
-    ].sum()
-    label_stats.loc["Total", "Label"] = "Total"
-    label_stats.loc["Total", "Augmentation_Factor"] = (
-        None  # No augmentation for total row
-    )
-
-    return label_stats
 
 
 #########################################################################################################

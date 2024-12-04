@@ -1,6 +1,9 @@
 import config
 from InquirerPy import inquirer
 from rich.console import Console
+import numpy as np
+import pandas as pd
+from sklearn.utils.class_weight import compute_class_weight
 
 # torch
 import torch
@@ -13,6 +16,7 @@ from src.ICNTrainer import ICNTrainer
 from src.XRayDataset import XRayDataset
 from src.ModelInspector import ModelInspector
 from src.prePro import preprocess_metadata, split_data
+from src.utils.Tools import dataframe_inspector
 
 # Using constants from config
 mean = config.MEAN
@@ -67,10 +71,25 @@ class PipelineManager:
                 no_finding_ratio=0.10,
             )
 
-            # Print label statistics for each set
-            all_labels = list(
-                set([label for labels in filtered_df["Labels"] for label in labels])
+            labels_df = pd.DataFrame(train_df["MultiHotLabels"].tolist())
+            class_weights_dict = {}
+
+            for column, class_name in zip(labels_df.columns, disease_classes):
+                # Get the values for each class (0s and 1s)
+                labels = labels_df[column].values
+                # Compute class weight for each label (balanced based on occurrence)
+                class_weight = compute_class_weight(
+                    class_weight="balanced", classes=np.unique(labels), y=labels
+                )
+                # We only need the weight for the positive class (label = 1)
+                class_weights_dict[class_name] = class_weight[1]
+
+            print("Class Weights:", class_weights_dict)
+
+            stats_summary: pd.DataFrame = dataframe_inspector(
+                test_df, "Labels", disease_classes
             )
+            print(stats_summary)
 
             train_dataset = XRayDataset(
                 dataframe=train_df,
@@ -96,31 +115,18 @@ class PipelineManager:
                 val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_wrks
             )
 
-            # Save DataFrame to a CSV file in a given location
-            output_csv_path = "data/raw/train.csv"
-            train_df.to_csv(output_csv_path, index=False)
-            print(f"\nDataFrame saved to {output_csv_path}")
-
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             torch.cuda.empty_cache()
 
             # Convert class weights to PyTorch tensor and move it to the device
-            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(
-                self.device
-            )
+            class_weights_tensor = torch.tensor(
+                list(class_weights_dict.values()), dtype=torch.float32
+            ).to(self.device)
+
             self.criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights_tensor)
 
             # Load and modify the EfficientNet B3 model
             self.model = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1)
-
-            self.model.features[0][0] = nn.Conv2d(
-                1,
-                self.model.features[0][0].out_channels,
-                kernel_size=self.model.features[0][0].kernel_size,
-                stride=self.model.features[0][0].stride,
-                padding=self.model.features[0][0].padding,
-                bias=False,
-            )
 
             self.model.classifier = nn.Sequential(
                 nn.Dropout(dropout_rate),  # Dropout layer for regularization

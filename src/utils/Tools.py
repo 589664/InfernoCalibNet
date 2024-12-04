@@ -2,7 +2,9 @@ import os
 from tqdm import tqdm
 from typing import Tuple
 from PIL import Image
+import pandas as pd
 from torchvision import transforms
+from sklearn.utils.class_weight import compute_class_weight
 
 # torch
 import torch
@@ -78,3 +80,52 @@ def compute_mean_std_rgb_dataset(
         (mean[1].item(), std[1].item()),
         (mean[2].item(), std[2].item()),
     )
+
+
+def load_image(img_path: str, image_size: tuple[int, int]) -> Image.Image:
+    image: Image.Image = Image.open(img_path).convert("RGB")  # Ensure image is RGB
+    resized_image: Image.Image = image.resize(image_size, Image.LANCZOS)
+    return resized_image
+
+
+def dataframe_inspector(
+    df: pd.DataFrame, column_name: str, disease_classes: list[str]
+) -> pd.DataFrame:
+    if column_name not in df.columns:
+        raise ValueError(f"Column '{column_name}' not found in DataFrame.")
+
+    # Convert the given column into a list of lists with each disease name extracted
+    labels_list: list[list[str]] = (
+        df[column_name].apply(lambda x: eval(x) if isinstance(x, str) else x).tolist()
+    )
+    labels_df: pd.DataFrame = pd.DataFrame(0, index=df.index, columns=disease_classes)
+
+    # Populate labels_df with 1s for each disease present in the corresponding row
+    for i, diseases in enumerate(labels_list):
+        if isinstance(diseases, list):
+            for disease in diseases:
+                if disease in disease_classes:
+                    labels_df.at[i, disease] = 1
+
+    # Initialize the summary DataFrame
+    summary_df: pd.DataFrame = pd.DataFrame(
+        columns=["Disease", "Value", "Count", "Percentage"]
+    )
+
+    # Calculate value counts and percentages for each class and append to summary DataFrame
+    for disease in labels_df.columns:
+        value_counts: pd.Series = labels_df[disease].value_counts()
+        percentages: pd.Series = labels_df[disease].value_counts(normalize=True) * 100
+
+        stats_df: pd.DataFrame = pd.DataFrame(
+            {
+                "Disease": [disease] * len(value_counts),
+                "Value": value_counts.index,
+                "Count": value_counts.values,
+                "Percentage": percentages.values,
+            }
+        )
+
+        summary_df = pd.concat([summary_df, stats_df], ignore_index=True)
+
+    return summary_df
