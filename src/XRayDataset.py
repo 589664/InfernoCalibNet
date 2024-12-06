@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from .utils.Tools import load_image
 
 
-class XRayDataset(Dataset):
+class XrayDataset(Dataset):
     def __init__(
         self,
         csv_file_path: str,

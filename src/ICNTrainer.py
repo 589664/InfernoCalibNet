@@ -1,243 +1,118 @@
 import torch
-import wandb
-import config
-import warnings
-from tqdm.rich import tqdm
+import torch.nn as nn
+from torchmetrics.classification import MultilabelAUROC, MultilabelF1Score
+from tqdm import tqdm
 from rich.console import Console
-from tqdm import TqdmExperimentalWarning
-from torchmetrics.classification import MultilabelF1Score, MultilabelAUROC
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.data import DataLoader
 
-epochs = config.EPOCHS
-classes = config.NUM_CLASSES
-model_dir = config.MODEL_DIR
-drop_pat = config.DROPPUT_PATIENCE
+from config import BATCH_SZ, NUM_WRKRS, LR, EPOCHS, PATIENCE
 
 
 class ICNTrainer:
     def __init__(
         self,
         model,
-        train_loader,
-        val_loader,
-        optimizer,
-        criterion,
-        device,
-        project_name,
-        config=None,
-        log_every_n_batches=10,
+        train_ds,
+        val_ds,
+        batch_size: int = BATCH_SZ,
+        learning_rate: float = LR,
     ):
-        """
-        Initialize the ICNTrainer class with a PyTorch model and W&B integration.
-        """
-        # Existing Console instance
         self.console = Console()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.cuda.empty_cache()
 
-        self.model = model.to(device)
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.optimizer = optimizer
-        self.criterion = criterion
-        self.device = device
-        self.log_every_n_batches = log_every_n_batches
-
-        # Initialize scheduler and W&B
-        self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer=self.optimizer,
-            max_lr=0.01,
-            steps_per_epoch=len(train_loader),
-            epochs=epochs,
+        self.model = model().to(self.device)
+        self.train_loader = DataLoader(
+            train_ds, batch_size=batch_size, shuffle=True, num_workers=NUM_WRKRS
         )
-        wandb.init(project=project_name, config=config)
+        self.val_loader = DataLoader(
+            val_ds, batch_size=batch_size, shuffle=False, num_workers=NUM_WRKRS
+        )
+        self.criterion = nn.BCEWithLogitsLoss()
+        self.metric_auc = MultilabelAUROC(num_labels=15)
+        self.metric_f1 = MultilabelF1Score(num_labels=15)
+        self.optimizer = AdamW(
+            self.model.parameters(),
+            lr=learning_rate,
+            betas=(0.9, 0.999),
+            eps=1e-08,
+            weight_decay=1e-5,
+        )
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=EPOCHS, eta_min=0)
+        self.epochs = EPOCHS
+        self.patience = PATIENCE
 
     def train_one_epoch(self):
-        """Train the model for one epoch with tqdm and log results with rich."""
         self.model.train()
-        running_loss = 0.0
-
-        # Initialize torchmetrics
-        f1_metric = MultilabelF1Score(num_labels=classes, average="macro").to(
-            self.device
-        )
-        auc_metric = MultilabelAUROC(num_labels=classes, average="macro").to(
-            self.device
-        )
-
-        # Using tqdm.rich for training progress bar
-        train_progress = tqdm(self.train_loader, desc="Training", leave=False)
-
-        # Training steps loop
-        for batch_idx, (images, labels) in enumerate(train_progress):
+        train_ls_sum = 0.0
+        for images, labels in tqdm(self.train_loader, desc="Training"):
             images, labels = images.to(self.device), labels.to(self.device)
 
-            # Forward pass
             self.optimizer.zero_grad()
-            logits = self.model(images)
-            loss = self.criterion(logits, labels)  # BCEWithLogitsLoss
+            outputs = self.model(images)
+            loss = self.criterion(outputs, labels)
 
-            # Backward pass
+            self.metric_auc.update(outputs, labels)
+            self.metric_f1.update(outputs, labels)
+
             loss.backward()
             self.optimizer.step()
-            self.scheduler.step()
 
-            # Update running loss
-            batch_loss = loss.item()
-            running_loss += batch_loss
+            train_ls_sum += loss.item()
 
-            # Sigmoid activation for predictions where output is
-            # confidence scores/probabilities per image in current batch
-            sigmoid_outputs = torch.sigmoid(logits)
-
-            # Update metrics
-            f1_metric.update(sigmoid_outputs, labels.long())
-            auc_metric.update(sigmoid_outputs, labels.long())
-
-            # Log batch loss to WandB
-            if batch_idx % self.log_every_n_batches == 0:
-                wandb.log({"batch_loss": batch_loss})
-
-            # Update tqdm bar with average loss
-            train_progress.set_postfix(loss=running_loss / (batch_idx + 1))
-
-        # Epoch metrics
-        epoch_loss = running_loss / len(self.train_loader)
-        epoch_f1 = f1_metric.compute()  # Compute the F1 score for the epoch
-        epoch_auc = auc_metric.compute()  # Compute the AUROC for the epoch
-
-        # Reset metrics for the next epoch
-        f1_metric.reset()
-        auc_metric.reset()
-
-        # Log metrics to WandB
-        wandb.log(
-            {
-                "epoch_loss": epoch_loss,
-                "train_f1": epoch_f1.item(),
-                "train_auc": epoch_auc.item(),
-            }
-        )
-
-        # Log results using the existing console
+        avg_train_ls = train_ls_sum / len(self.train_loader)
         self.console.log(
-            f"[bold green]Training Loss: {epoch_loss:.4f}, F1 Score: {epoch_f1:.4f}, AUC: {epoch_auc:.4f}[/bold green]"
+            f"Training Loss: {avg_train_ls:.4f}, AUC: {self.metric_auc.compute():.4f}, F1 Score: {self.metric_f1.compute():.4f}"
         )
+        return avg_train_ls
 
-        return epoch_loss, epoch_f1.item(), epoch_auc.item()
-
-    # Inference/validation
-    def validate_one_epoch(self):
-        """Validate the model for one epoch with tqdm and log results with rich."""
+    def validate(self):
         self.model.eval()
-        val_loss = 0.0
-
-        # Initialize metrics from torchmetrics
-        f1_metric = MultilabelF1Score(num_labels=classes, average="macro").to(
-            self.device
-        )
-        auc_metric = MultilabelAUROC(num_labels=classes, average="macro").to(
-            self.device
-        )
-
-        # Using tqdm.rich for validation progress bar
-        val_progress = tqdm(self.val_loader, desc="Validation", leave=False)
-
+        valid_ls_sum = 0.0
         with torch.no_grad():
-            for images, labels in val_progress:
+            for images, labels in tqdm(self.val_loader, desc="Validating"):
                 images, labels = images.to(self.device), labels.to(self.device)
 
-                # Forward pass and loss computation
                 outputs = self.model(images)
                 loss = self.criterion(outputs, labels)
-                val_loss += loss.item()
+                valid_ls_sum += loss.item()
 
-                # Apply sigmoid to logits to get probabilities
-                sigmoid_outputs = torch.sigmoid(outputs)
-
-                # Update metrics
-                f1_metric.update(sigmoid_outputs, labels.long())
-                auc_metric.update(sigmoid_outputs, labels.long())
-
-        # Aggregate metrics
-        f1_score = f1_metric.compute()
-        auc_score = auc_metric.compute()
-
-        # Normalize validation loss by the number of batches
-        val_loss = val_loss / len(self.val_loader)
-
-        # Log metrics to wandb
-        wandb.log(
-            {
-                "val_loss": val_loss,
-                "val_f1_score": f1_score.item(),
-                "val_auc": auc_score.item(),
-            }
-        )
-
-        # Log results to console
+        avg_valid_loss = valid_ls_sum / len(self.val_loader)
+        auc_score = self.metric_auc.compute()
+        f1_score = self.metric_f1.compute()
         self.console.log(
-            f"[bold magenta]Validation Loss: {val_loss:.4f}, F1 Score: {f1_score:.4f}, AUC: {auc_score:.4f}[/bold magenta]"
+            f"Validation Loss: {avg_valid_loss:.4f}, AUC: {auc_score:.4f}, F1 Score: {f1_score:.4f}"
         )
 
-        # Reset metrics for the next epoch
-        f1_metric.reset()
-        auc_metric.reset()
+        self.metric_auc.reset()
+        self.metric_f1.reset()
+        return avg_valid_loss
 
-        return val_loss, f1_score.item(), auc_score.item()
+    def fit(self):
+        best_valid_ls = float("inf")
+        early_stop_cntr = 0
 
-    def fit(self, epochs, early_stopping_patience=drop_pat):
-        """Train and validate the model for a specified number of epochs with early stopping."""
+        for epoch in range(self.epochs):
+            self.console.log(f"Epoch [{epoch + 1}/{self.epochs}]")
+            train_ls = self.train_one_epoch()
+            valid_ls = self.validate()
 
-        # Supress the warning
-        warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
+            self.scheduler.step()
 
-        patience_counter = 0  # Counter for early stopping
-        best_model_path = "best_model.pth"
-        best_val_loss = float("inf")  # Track the best validation loss
-
-        # Run training & validation
-        for epoch in range(epochs):
-            self.console.log(f"[bold cyan]Epoch {epoch + 1}/{epochs}[/bold cyan]")
-
-            # Training
-            train_loss, train_f1, train_auc = self.train_one_epoch()
-
-            # Validation
-            val_loss, val_f1, val_auc = self.validate_one_epoch()
-
-            # Optionally log or save the model after each epoch
-            wandb.log(
-                {
-                    "epoch": epoch + 1,
-                    "train_loss": train_loss,
-                    "train_f1": train_f1,
-                    "train_auc": train_auc,
-                    "val_loss": val_loss,
-                    "val_f1": val_f1,
-                    "val_auc": val_auc,
-                    "learning_rate": self.optimizer.param_groups[0][
-                        "lr"
-                    ],  # Log learning rate
-                }
-            )
-
-            # Save the model if validation loss improves
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                torch.save(self.model.state_dict(), model_dir / best_model_path)
-                self.console.log(
-                    f"[bold green]Validation loss improved. Model saved at epoch {epoch + 1}[/bold green]"
-                )
-                patience_counter = 0  # Reset patience counter
+            if valid_ls < best_valid_ls:
+                best_valid_ls = valid_ls
+                early_stop_cntr = 0
+                torch.save(self.model.state_dict(), "best_model.pth")
             else:
-                patience_counter += 1
+                early_stop_cntr += 1
 
-            # Early stopping
-            if patience_counter >= early_stopping_patience:
-                self.console.log(
-                    f"[bold red]Early stopping triggered at epoch {epoch + 1}[/bold red]"
-                )
+            if early_stop_cntr >= self.patience:
+                self.console.log("Early stopping triggered")
                 break
 
-        self.console.log("[bold cyan]Training complete.[/bold cyan]")
-        self.console.log(
-            f"[bold green]Best validation loss: {best_val_loss:.4f}[/bold green]"
-        )
+
+# Example usage
+# trainer = ICNTrainer(model, train_ds, val_ds)
+# trainer.fit()
