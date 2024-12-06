@@ -68,7 +68,7 @@ class PipelineManager:
                 train_ratio=train_size,
                 val_ratio=val_size,
                 test_ratio=test_size,
-                no_finding_ratio=0.10,
+                no_finding_ratio=0.3,
             )
 
             labels_df = pd.DataFrame(train_df["MultiHotLabels"].tolist())

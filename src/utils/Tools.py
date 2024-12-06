@@ -1,14 +1,15 @@
 import os
+import pandas as pd
+from PIL import Image
 from tqdm import tqdm
 from typing import Tuple
-from PIL import Image
-import pandas as pd
-from torchvision import transforms
-from sklearn.utils.class_weight import compute_class_weight
 
 # torch
 import torch
+from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
+
+from config import IMG_SIZE, XRAY_DIR
 
 
 class ImageFolderDataset(Dataset):
@@ -82,10 +83,17 @@ def compute_mean_std_rgb_dataset(
     )
 
 
-def load_image(img_path: str, image_size: tuple[int, int]) -> Image.Image:
+# __________________________________________________________________________________________
+
+
+def load_image(image_id: str, image_size: int = IMG_SIZE) -> Image.Image:
+    img_path: str = os.path.join(XRAY_DIR, image_id)
     image: Image.Image = Image.open(img_path).convert("RGB")  # Ensure image is RGB
-    resized_image: Image.Image = image.resize(image_size, Image.LANCZOS)
+    resized_image: Image.Image = image.resize((image_size, image_size), Image.LANCZOS)
     return resized_image
+
+
+# __________________________________________________________________________________________
 
 
 def dataframe_inspector(
@@ -129,3 +137,6 @@ def dataframe_inspector(
         summary_df = pd.concat([summary_df, stats_df], ignore_index=True)
 
     return summary_df
+
+
+# __________________________________________________________________________________________
