@@ -1,17 +1,17 @@
-import pandas as pd
 import torch
+import pandas as pd
 from PIL import Image
+from config import MEAN, STD
 from torchvision import transforms
 from torch.utils.data import Dataset
 from .utils.Tools import load_image
-from config import IN_CSV, OUT_CSV, MEAN, STD
 
 
 class XRayDataset(Dataset):
     def __init__(
         self,
-        csv_file_path: str = IN_CSV,
-        output_csv_path: str = OUT_CSV,
+        csv_file_path: str,
+        output_csv_path: str = None,
         mean: tuple[float, float, float] = MEAN,
         std: tuple[float, float, float] = STD,
     ):
@@ -20,18 +20,16 @@ class XRayDataset(Dataset):
         self.mean: tuple[float, float, float] = mean
         self.std: tuple[float, float, float] = std
 
-        # Read, process and save the dataframe
+        # Read, process and optionally save the dataframe
         self.dataframe: pd.DataFrame = self._prepare_dataframe()
-        self.dataframe.to_csv(self.output_csv_path, index=False)
+        if self.output_csv_path:
+            self.dataframe.to_csv(self.output_csv_path, index=False)
 
         # Transformation to be applied (resize, convert to tensor, normalize)
         self.transform: transforms.Compose = transforms.Compose(
             [
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=self.mean,
-                    std=self.std,
-                ),
+                transforms.Normalize(mean=self.mean, std=self.std),
             ]
         )
 
@@ -77,7 +75,7 @@ class XRayDataset(Dataset):
         # Get the image ID directly from the dataframe
         image_id: str = self.dataframe.iloc[idx]["ImageID"]
 
-        # Load image using the helper method (which now uses constants from config)
+        # Load image using the helper method
         image: Image.Image = load_image(image_id)
 
         # Convert to numpy array and apply the transformations
@@ -93,7 +91,8 @@ class XRayDataset(Dataset):
 
 # Example usage:
 # csv_file_path = "data/metadata.csv"
-# dataset = XRayDataset(csv_file_path)
+# output_csv_path = "data/output_metadata.csv"
+# dataset = XRayDataset(csv_file_path, output_csv_path)
 #
 # # Get the first data sample
 # image, labels = dataset[0]

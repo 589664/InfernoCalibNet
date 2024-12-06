@@ -1,14 +1,15 @@
-# from src.XrayDataset import XRayDataset
-from src.utils.Tools import split_and_save_dataframe, count_images_per_class
+from config import OUT_DIR
+from src.XrayDataset import XRayDataset
 
-from config import ROOT_DIR
+# from src.utils.Tools import split_and_save_dataframe
 
 
 def main():
 
-    split_and_save_dataframe()
+    # split_and_save_dataframe()
 
-    count_images_per_class(txt_path=ROOT_DIR / "data" / "raw" / "train_val_list.txt")
+    trainDS = XRayDataset(csv_file_path=OUT_DIR / "train.csv")
+    valDS = XRayDataset(csv_file_path=OUT_DIR / "val.csv")
 
 
 if __name__ == "__main__":
