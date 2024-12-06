@@ -99,10 +99,18 @@ def compute_mean_std_rgb_dataset(
 
 
 def load_image(image_id: str, image_size: int = IMG_SIZE) -> Image.Image:
-    img_path: str = os.path.join(XRAY_DIR, image_id)
-    image: Image.Image = Image.open(img_path).convert("RGB")  # Ensure image is RGB
-    resized_image: Image.Image = image.resize((image_size, image_size), Image.LANCZOS)
-    return resized_image
+    # Search for the image in subdirectories
+    for root, _, files in os.walk(XRAY_DIR):
+        if image_id in files:
+            img_path: str = os.path.join(root, image_id)
+            image: Image.Image = Image.open(img_path).convert(
+                "RGB"
+            )  # Ensure image is RGB
+            resized_image: Image.Image = image.resize(
+                (image_size, image_size), Image.LANCZOS
+            )
+            return resized_image
+    raise FileNotFoundError(f"Image {image_id} not found in directory {XRAY_DIR}")
 
 
 # __________________________________________________________________________________________
