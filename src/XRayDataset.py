@@ -12,13 +12,13 @@ class XRayDataset(Dataset):
         self,
         csv_file_path: str = IN_CSV,
         output_csv_path: str = OUT_CSV,
-        mean: float = MEAN,
-        std: float = STD,
+        mean: tuple[float, float, float] = MEAN,
+        std: tuple[float, float, float] = STD,
     ):
         self.csv_file_path: str = csv_file_path
         self.output_csv_path: str = output_csv_path
-        self.mean: tuple[float] = mean
-        self.std: tuple[float] = std
+        self.mean: tuple[float, float, float] = mean
+        self.std: tuple[float, float, float] = std
 
         # Read, process and save the dataframe
         self.dataframe: pd.DataFrame = self._prepare_dataframe()
@@ -29,8 +29,9 @@ class XRayDataset(Dataset):
             [
                 transforms.ToTensor(),
                 transforms.Normalize(
-                    mean=self.mean, std=self.std
-                ),  # Use computed mean/std for Grayscale
+                    mean=self.mean,
+                    std=self.std,
+                ),
             ]
         )
 
