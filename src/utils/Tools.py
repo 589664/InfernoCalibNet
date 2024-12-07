@@ -168,6 +168,7 @@ def split_and_save_dataframe(
     train_pct: float = TRAIN_PCT,
     val_pct: float = VAL_PCT,
     test_pct: float = TEST_PCT,
+    reductRate: float = 0.5,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     # Load the dataset
     data: pd.DataFrame = pd.read_csv(csv_path)
@@ -176,6 +177,19 @@ def split_and_save_dataframe(
     for disease in DISEASE_LABELS:
         if disease not in data.columns:
             data[disease] = data[STRATIFY_COL].apply(lambda x: 1 if disease in x else 0)
+
+    # Reduce 'No Finding' label by a certain percentage
+    if "No Finding" in DISEASE_LABELS:
+        no_finding_mask = data["No Finding"] == 1
+        no_finding_data = data[no_finding_mask]
+        other_data = data[~no_finding_mask]
+
+        reduced_no_finding_data = no_finding_data.sample(
+            frac=(1 - reductRate), random_state=RAND_STATE
+        )
+        data = pd.concat([other_data, reduced_no_finding_data], axis=0).reset_index(
+            drop=True
+        )
 
     # Create output directory if it does not exist
     os.makedirs(out_dir, exist_ok=True)
