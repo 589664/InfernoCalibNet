@@ -1,159 +1,16 @@
-import config
 from InquirerPy import inquirer
 from rich.console import Console
-import numpy as np
-import pandas as pd
-from sklearn.utils.class_weight import compute_class_weight
 
 # torch
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 
 
 # Initialize Rich console
 console = Console()
 
 
-class PipelineManager:
-    def __init__(self):
-        self.model = None
-        self.train_loader = None
-        self.val_loader = None
-        self.optimizer = None
-        self.criterion = None
-        self.device = None
-
-    def preprocess_data(self):
-        console.print("[bold green]Preprocessing data...[/bold green]")
-        with console.status("Processing data...", spinner="dots"):
-            # Data preprocessing steps
-            filtered_df = preprocess_metadata(
-                raw_dir / "xraysMD.csv",
-                raw_dir,
-                processed_dir / "xraysMD.csv",
-            )
-
-            # Split the data into train, validation, and test sets
-            train_df, val_df, test_df = split_data(
-                filtered_df,
-                train_ratio=train_size,
-                val_ratio=val_size,
-                test_ratio=test_size,
-                no_finding_ratio=0.3,
-            )
-
-            labels_df = pd.DataFrame(train_df["MultiHotLabels"].tolist())
-            class_weights_dict = {}
-
-            for column, class_name in zip(labels_df.columns, disease_classes):
-                # Get the values for each class (0s and 1s)
-                labels = labels_df[column].values
-                # Compute class weight for each label (balanced based on occurrence)
-                class_weight = compute_class_weight(
-                    class_weight="balanced", classes=np.unique(labels), y=labels
-                )
-                # We only need the weight for the positive class (label = 1)
-                class_weights_dict[class_name] = class_weight[1]
-
-            print("Class Weights:", class_weights_dict)
-
-            stats_summary: pd.DataFrame = dataframe_inspector(
-                test_df, "Labels", disease_classes
-            )
-            print(stats_summary)
-
-            train_dataset = XRayDataset(
-                dataframe=train_df,
-                image_dir=raw_dir / "xrays",
-                img_size=img_size,
-                mean=mean,
-                std=std,
-            )
-
-            val_dataset = XRayDataset(
-                dataframe=val_df,
-                image_dir=raw_dir / "xrays",
-                img_size=img_size,
-                mean=mean,
-                std=std,
-            )
-
-            self.train_loader = DataLoader(
-                train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_wrks
-            )
-
-            self.val_loader = DataLoader(
-                val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_wrks
-            )
-
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            torch.cuda.empty_cache()
-
-            # Convert class weights to PyTorch tensor and move it to the device
-            class_weights_tensor = torch.tensor(
-                list(class_weights_dict.values()), dtype=torch.float32
-            ).to(self.device)
-
-            self.criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights_tensor)
-
-            # Load and modify the EfficientNet B3 model
-            self.model = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1)
-
-            self.model.classifier = nn.Sequential(
-                nn.Dropout(dropout_rate),  # Dropout layer for regularization
-                nn.Linear(
-                    self.model.classifier[1].in_features, num_classes
-                ),  # Output layer for final predictions
-            )
-
-            self.model = self.model.to(self.device)
-
-            # Set up the optimizer
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
-
-        console.print("[bold green]Data preprocessing complete![/bold green]")
-
-    def train_model(self):
-        if not all(
-            [self.model, self.train_loader, self.optimizer, self.criterion, self.device]
-        ):
-            console.print("[bold red]Please run preprocessing first![/bold red]")
-            return
-
-        # Instantiate ICNTrainer and begin training
-        console.print("[bold blue]Training model with ICNTrainer...[/bold blue]")
-        trainer = ICNTrainer(
-            model=self.model,
-            train_loader=self.train_loader,
-            val_loader=self.val_loader,
-            optimizer=self.optimizer,
-            criterion=self.criterion,
-            device=self.device,
-            project_name="inferno-calib-net",
-            config={
-                "learning_rate": learning_rate,
-                "batch_size": batch_size,
-                "epochs": epochs,
-            },
-        )
-
-        trainer.fit(epochs=epochs)
-        console.print("[bold blue]Model training complete![/bold blue]")
-
-    def inspect_model(self):
-        config = {
-            "model": self.model,
-            "model_path": model_dir / "best_model.pth",
-            "input_size": img_size,
-            "mean": mean,
-            "std": std,
-        }
-
-
 def main():
-    pipeline_manager = PipelineManager()
+    console.print("[bold green]Preprocessing data...[/bold green]")
+    with console.status("Processing data...", spinner="dots"):
 
     # Define options to call methods on the pipeline manager
     options = {

@@ -8,7 +8,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torch.amp import GradScaler, autocast
 
-from config import BATCH_SZ, NUM_WRKRS, LR, EPOCHS, PATIENCE
+from config import BATCH_SZ, NUM_WRKRS, LR, EPOCHS, PATIENCE, MODEL_DIR
 
 
 class ICNTrainer:
@@ -17,6 +17,7 @@ class ICNTrainer:
         model,
         train_ds,
         val_ds,
+        class_weights,
         batch_size: int = BATCH_SZ,
         learning_rate: float = LR,
     ):
@@ -31,7 +32,7 @@ class ICNTrainer:
         self.val_loader = DataLoader(
             val_ds, batch_size=batch_size, shuffle=False, num_workers=NUM_WRKRS
         )
-        self.criterion = nn.BCEWithLogitsLoss()
+        self.criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights.to(self.device))
         self.metric_auc = MultilabelAUROC(num_labels=15).to(self.device)
         self.metric_f1 = MultilabelF1Score(num_labels=15).to(self.device)
         self.optimizer = AdamW(
@@ -118,7 +119,10 @@ class ICNTrainer:
             if valid_ls < best_valid_ls:
                 best_valid_ls = valid_ls
                 early_stop_cntr = 0
-                torch.save(self.model.state_dict(), "best_model.pth")
+                torch.save(self.model.state_dict(), MODEL_DIR)
+                self.console.log(
+                    f"Model improved. Saving model with validation loss: {best_valid_ls:.4f}"
+                )
             else:
                 early_stop_cntr += 1
 
@@ -128,5 +132,6 @@ class ICNTrainer:
 
 
 # Example usage
-# trainer = ICNTrainer(model, train_ds, val_ds)
+# class_weights = torch.tensor([...])  # Define your class weights here
+# trainer = ICNTrainer(model, train_ds, val_ds, class_weights=class_weights)
 # trainer.fit()
