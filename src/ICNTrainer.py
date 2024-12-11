@@ -6,9 +6,9 @@ from rich.console import Console
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
-from torch.amp import GradScaler, autocast
+from torch.cuda.amp import GradScaler, autocast
 
-from config import BATCH_SZ, NUM_WRKRS, LR, EPOCHS, PATIENCE, MODEL_DIR
+from config import BATCH_SZ, NUM_WRKRS, LR, EPOCHS, PATIENCE, MODEL_DIR, NUM_CL
 
 
 class ICNTrainer:
@@ -33,8 +33,8 @@ class ICNTrainer:
             val_ds, batch_size=batch_size, shuffle=False, num_workers=NUM_WRKRS
         )
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights.to(self.device))
-        self.metric_auc = MultilabelAUROC(num_labels=15).to(self.device)
-        self.metric_f1 = MultilabelF1Score(num_labels=15).to(self.device)
+        self.metric_auc = MultilabelAUROC(num_labels=NUM_CL)
+        self.metric_f1 = MultilabelF1Score(num_labels=NUM_CL)
         self.optimizer = AdamW(
             self.model.parameters(),
             lr=learning_rate,
@@ -50,20 +50,16 @@ class ICNTrainer:
     def train_one_epoch(self):
         self.model.train()
         train_ls_sum = 0.0
+
         for images, labels in tqdm(self.train_loader, desc="Training"):
             images, labels = images.to(self.device), labels.to(self.device).float()
 
             self.optimizer.zero_grad()
-            with autocast(device_type=self.device.type):
+            with autocast():
                 outputs = self.model(images)
                 loss = self.criterion(outputs, labels)
 
-            # Ensure labels are float32 for metrics
-            labels = labels.float()
-
-            self.metric_auc.update(outputs, labels.long())
-            self.metric_f1.update(outputs, labels.long())
-
+            # Backward pass
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -71,38 +67,52 @@ class ICNTrainer:
             train_ls_sum += loss.item()
 
         avg_train_ls = train_ls_sum / len(self.train_loader)
+
+        # Compute metrics
+        self.metric_auc.reset()
+        self.metric_f1.reset()
+
+        with torch.no_grad():
+            for images, labels in tqdm(self.train_loader, desc="Computing Metrics"):
+                images, labels = images.to(self.device), labels.to(self.device).float()
+                outputs = self.model(images)
+                self.metric_auc.update(outputs.cpu(), labels.cpu())
+                self.metric_f1.update(outputs.cpu(), labels.cpu())
+
+        auc_score = self.metric_auc.compute()
+        f1_score = self.metric_f1.compute()
+
         self.console.log(
-            f"Training Loss: {avg_train_ls:.4f}, AUC: {self.metric_auc.compute():.4f}, F1 Score: {self.metric_f1.compute():.4f}"
+            f"Training Loss: {avg_train_ls:.4f}, AUC: {auc_score:.4f}, F1 Score: {f1_score:.4f}"
         )
         return avg_train_ls
 
     def validate(self):
         self.model.eval()
         valid_ls_sum = 0.0
+
+        self.metric_auc.reset()
+        self.metric_f1.reset()
+
         with torch.no_grad():
             for images, labels in tqdm(self.val_loader, desc="Validating"):
                 images, labels = images.to(self.device), labels.to(self.device).float()
 
-                with autocast(device_type=self.device.type):
+                with autocast():
                     outputs = self.model(images)
                     loss = self.criterion(outputs, labels)
                 valid_ls_sum += loss.item()
 
-                # Ensure labels are float32 for metrics
-                labels = labels.float()
-
-                self.metric_auc.update(outputs, labels.long())
-                self.metric_f1.update(outputs, labels.long())
+                self.metric_auc.update(outputs, labels)
+                self.metric_f1.update(outputs, labels)
 
         avg_valid_loss = valid_ls_sum / len(self.val_loader)
         auc_score = self.metric_auc.compute()
         f1_score = self.metric_f1.compute()
+
         self.console.log(
             f"Validation Loss: {avg_valid_loss:.4f}, AUC: {auc_score:.4f}, F1 Score: {f1_score:.4f}"
         )
-
-        self.metric_auc.reset()
-        self.metric_f1.reset()
         return avg_valid_loss
 
     def fit(self):
@@ -131,7 +141,7 @@ class ICNTrainer:
                 break
 
 
-# Example usage
+# Example usage:
 # class_weights = torch.tensor([...])  # Define your class weights here
 # trainer = ICNTrainer(model, train_ds, val_ds, class_weights=class_weights)
 # trainer.fit()
