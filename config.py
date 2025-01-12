@@ -2,25 +2,25 @@ import os
 from pathlib import Path
 
 # Normalization values
-MEAN = (0.5463, 0.5463, 0.5463)
-STD = (0.2366, 0.2366, 0.2366)
+MEAN = 0.5463
+STD = 0.2366
+CHANNELS = 1
 
 # Model and Data Parameters
 IMG_SIZE = 224
 EPOCHS = 64
-BATCH_SZ = 24
-LR = 0.0001
-NUM_CL = 14
-NUM_WRKRS = 8
+BATCH_SZ = 32
+LR = 0.0005
+NUM_CL = 13
+NUM_WRKRS = 4
 DROP_RATE = 0.3
-PATIENCE = 8
+PATIENCE = 12
 
 # Dataset distribution
-RAND_STATE = 42
-STRATIFY_COL = "Finding Labels"
+RAND_STATE = 32
 TRAIN_PCT = 0.8
 VAL_PCT = 0.10
-TEST_PCT = 0.05
+TEST_PCT = 0.10
 
 DISEASE_LABELS = [
     "Atelectasis",
@@ -30,10 +30,8 @@ DISEASE_LABELS = [
     "Effusion",
     "Emphysema",
     "Fibrosis",
-    "Hernia",
     "Infiltration",
     "Mass",
-    "No Finding",
     "Nodule",
     "Pleural_Thickening",
     "Pneumonia",

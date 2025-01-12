@@ -1,109 +1,62 @@
-import torch
+import os
 import pandas as pd
-from config import MEAN, STD, NUM_CL
-from torchvision import transforms
+import torch
 from torch.utils.data import Dataset
-from .utils.Tools import load_image
+from PIL import Image
+from torchvision import transforms
+from config import IMG_SIZE, OUT_DIR, MEAN, STD
 
 
 class XrayDataset(Dataset):
-    def __init__(
-        self,
-        csv_file_path: str,
-        output_csv_path: str = None,
-        mean: tuple[float, float, float] = MEAN,
-        std: tuple[float, float, float] = STD,
-    ):
-        self.csv_file_path = csv_file_path
-        self.output_csv_path = output_csv_path
-        self.mean = mean
-        self.std = std
+    def __init__(self, split: str, augmentations: bool = True) -> None:
+        csv_path = os.path.join(OUT_DIR, f"{split}.csv")
+        self.metadata = pd.read_csv(csv_path)
 
-        self.dataframe = self._prepare_dataframe()
-        if self.output_csv_path:
-            self.dataframe.to_csv(self.output_csv_path, index=False)
-
-        self.transform = transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize(mean=self.mean, std=self.std),
-            ]
-        )
-
-        self.pos_weight = self._calculate_pos_weight()
-        assert len(self.unique_labels) == NUM_CL
-
-    def _prepare_dataframe(self) -> pd.DataFrame:
-        df = pd.read_csv(self.csv_file_path)
-
-        df = df[
-            [
-                "Image Index",
-                "Finding Labels",
-                "Patient Age",
-                "Patient Gender",
-                "View Position",
-            ]
-        ]
-        df.columns = ["ImageID", "DL", "PA", "PG", "VP"]
-
-        df["PG"] = df["PG"].map({"M": 1, "F": 0})
-        df["VP"] = df["VP"].map({"PA": 1, "AP": 0})
-        df["PA"] = (df["PA"] - df["PA"].min()) / (df["PA"].max() - df["PA"].min())
-
-        all_labels = set(
-            label for labels in df["DL"].str.split("|") for label in labels
-        )
-        all_labels.discard("No Finding")
-        unique_labels = sorted(list(all_labels))
-
-        def encode_labels(label_string):
-            labels = label_string.split("|")
-            if "No Finding" in labels:
-                return [0] * len(unique_labels)
-            return [1 if label in labels else 0 for label in unique_labels]
-
-        df["MultiHotLabels"] = df["DL"].apply(encode_labels)
-
-        self.unique_labels = unique_labels
-        return df
-
-    def _calculate_pos_weight(self) -> torch.Tensor:
-        label_sums = (
-            self.dataframe["MultiHotLabels"].apply(pd.Series).sum(axis=0).values
-        )
-        total_samples = len(self.dataframe)
-
-        pos_weight = (total_samples - label_sums) / (label_sums + 1e-6)
-        return torch.tensor(pos_weight, dtype=torch.float32)
+        # Define augmentations for training and simple transformations for validation/test
+        if augmentations:
+            self.transform = transforms.Compose(
+                [
+                    transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                    transforms.RandomRotation(10),
+                    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+                    transforms.RandomResizedCrop(IMG_SIZE, scale=(0.8, 1.0)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[MEAN], std=[STD]),
+                ]
+            )
+        else:
+            self.transform = transforms.Compose(
+                [
+                    transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[MEAN], std=[STD]),
+                ]
+            )
 
     def __len__(self) -> int:
-        return len(self.dataframe)
+        return len(self.metadata)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
-        image_id = self.dataframe.iloc[idx]["ImageID"]
+    def __getitem__(self, idx: int) -> tuple:
+        if idx < 0 or idx >= len(self.metadata):
+            raise IndexError(
+                f"Index {idx} out of range for dataset with length {len(self.metadata)}"
+            )
 
-        image = load_image(image_id)
-        if self.transform:
-            image = self.transform(image)
+        row = self.metadata.iloc[idx]
+        image_path = row["ImagePath"]
 
-        labels = self.dataframe.iloc[idx]["MultiHotLabels"]
-        labels = torch.tensor(labels, dtype=torch.float32)
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"Image not found at {image_path}")
 
-        return image, labels
+        image = Image.open(image_path).convert("L")
+        image = self.transform(image)
+
+        # Parse the MultiHotLabels correctly
+        label = torch.tensor(eval(row["MultiHotLabels"]), dtype=torch.float)
+        return image, label
 
 
 # Example usage:
-# csv_file_path = "data/metadata.csv"
-# output_csv_path = "data/output_metadata.csv"
-# dataset = XrayDataset(csv_file_path, output_csv_path)
-#
-# pos_weight = dataset.pos_weight
-# print("pos_weight:", pos_weight)
-#
-# loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-#
-# image, labels = dataset[0]
-# predictions = torch.randn(labels.shape, dtype=torch.float32)
-# loss = loss_fn(predictions, labels)
-# print("Calculated Loss:", loss.item())
+# train_dataset = XrayDataset(split="train", augmentations=True)
+# validate_dataset = XrayDataset(split="validate", augmentations=False)
+# test_dataset = XrayDataset(split="test", augmentations=False)
