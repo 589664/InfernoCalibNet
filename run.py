@@ -13,13 +13,13 @@ from rich import print
 
 from src.NNModels import XrayResNet
 from src.ICNTrainer import ICNTrainer
-from src.XrayDataset import XrayDataset
+from src.XRayDataset import XrayDataset
 
 
 def optimize_hyperparameters() -> None:
     def objective(trial: optuna.trial.Trial) -> float:
         # Suggest hyperparameters
-        lr = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
+        lr = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
         batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
         patience = trial.suggest_int("patience", 3, 10)
         optimizer_type = trial.suggest_categorical("optimizer", ["Adam", "SGD"])
@@ -33,7 +33,10 @@ def optimize_hyperparameters() -> None:
 
         # Create DataLoader objects
         train_loader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True, num_workers=NUM_WRKRS
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=NUM_WRKRS,
         )
         val_loader = DataLoader(
             validate_dataset,
@@ -60,7 +63,7 @@ def optimize_hyperparameters() -> None:
                 optimizer, mode="min", patience=patience, factor=0.1
             )
         elif scheduler_type == "StepLR":
-            scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+            scheduler = StepLR(optimizer, step_size=3, gamma=0.8)
 
         loaders = {"train": train_loader, "val": val_loader}
 
@@ -75,13 +78,17 @@ def optimize_hyperparameters() -> None:
         )
 
         # Train and validate
-        trainer.fit()
+        trainer.fit(early_stopping=True)
 
         # Return validation loss for Optuna
         return trainer.best_val_loss
 
     # Create Optuna study
-    study = optuna.create_study(direction="minimize")
+    study = optuna.create_study(
+        direction="minimize",
+        storage="sqlite:///hyperparamXray.db",  # Save to SQLite database
+        study_name="hyperparamXray_study",
+    )
     study.optimize(objective, n_trials=50)
 
     # Print best trial
@@ -101,13 +108,25 @@ def main() -> None:
 
     # Create DataLoader objects
     train_loader = DataLoader(
-        train_dataset, batch_size=BATCH_SZ, shuffle=True, num_workers=NUM_WRKRS
+        train_dataset,
+        batch_size=BATCH_SZ,
+        shuffle=True,
+        num_workers=NUM_WRKRS,
+        pin_memory=True,
     )
     val_loader = DataLoader(
-        validate_dataset, batch_size=BATCH_SZ, shuffle=False, num_workers=NUM_WRKRS
+        validate_dataset,
+        batch_size=BATCH_SZ,
+        shuffle=False,
+        num_workers=NUM_WRKRS,
+        pin_memory=True,
     )
     test_loader = DataLoader(
-        test_dataset, batch_size=BATCH_SZ, shuffle=False, num_workers=NUM_WRKRS
+        test_dataset,
+        batch_size=BATCH_SZ,
+        shuffle=False,
+        num_workers=NUM_WRKRS,
+        pin_memory=True,
     )
 
     # Print one batch for verification
@@ -123,7 +142,7 @@ def main() -> None:
     # Define training components
     criterion = BCEWithLogitsLoss()
     optimizer = Adam(model.parameters(), lr=LR)
-    scheduler = ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.1)
+    scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
     loaders = {"train": train_loader, "val": val_loader}
 
     # Initialize and run trainer
