@@ -13,7 +13,7 @@ from rich import print
 
 from src.NNModels import XrayResNet
 from src.ICNTrainer import ICNTrainer
-from src.XRayDataset import XrayDataset
+from src.XrayDataset import XrayDataset
 
 
 def optimize_hyperparameters() -> None:
