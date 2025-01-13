@@ -8,13 +8,13 @@ CHANNELS = 1
 
 # Model and Data Parameters
 IMG_SIZE = 224
-EPOCHS = 64
+EPOCHS = 18
 BATCH_SZ = 32
 LR = 0.0005
 NUM_CL = 13
-NUM_WRKRS = 4
+NUM_WRKRS = 8
 DROP_RATE = 0.3
-PATIENCE = 12
+PATIENCE = 14
 
 # Dataset distribution
 RAND_STATE = 32

@@ -1,11 +1,16 @@
+import warnings
+
 import torch
-from torch.utils.data import DataLoader
 from tqdm.rich import tqdm
 from tqdm import TqdmExperimentalWarning
 from torchmetrics.classification import MultilabelAUROC, MultilabelF1Score
 from rich.console import Console
+
 from config import EPOCHS, PATIENCE, NUM_CL, MODEL_DIR
-import warnings
+
+
+# Suppress TQDM Experimental Warning
+warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 
 
 class ICNTrainer:
@@ -41,8 +46,10 @@ class ICNTrainer:
         self.best_val_loss = float("inf")
         self.no_improvement_counter = 0
 
-        # Suppress TqdmExperimentalWarning
-        warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
+        # Suppress TQDM Warnings
+        warnings.filterwarnings(
+            "ignore", category=UserWarning, message="rich is experimental/alpha"
+        )
 
     def train(self, epoch: int) -> tuple:
         self.model.train()
@@ -104,7 +111,7 @@ class ICNTrainer:
         )
         return avg_loss, val_auroc, val_f1
 
-    def fit(self) -> None:
+    def fit(self, early_stopping: bool = True) -> None:
         for epoch in range(EPOCHS):
             train_loss, train_auroc, train_f1 = self.train(epoch)
             val_loss, val_auroc, val_f1 = self.validate(epoch)
@@ -118,19 +125,29 @@ class ICNTrainer:
             else:
                 self.no_improvement_counter += 1
 
-            # Warning for no improvement
-            if self.no_improvement_counter >= PATIENCE:
-                self.console.log(
-                    f"[red]No improvement in validation loss for {PATIENCE} epochs. Consider stopping."
-                )
+            # Early stopping or warning
+            if early_stopping:
+                if self.no_improvement_counter >= PATIENCE:
+                    self.console.log(
+                        f"[red]Early stopping triggered after {epoch + 1} epochs due to no improvement."
+                    )
+                    break
+            else:
+                if self.no_improvement_counter >= PATIENCE:
+                    self.console.log(
+                        f"[red]No improvement in validation loss for {PATIENCE} epochs. Consider stopping."
+                    )
 
             # Learning rate scheduling
-            self.scheduler.step(val_loss)
+            if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                self.scheduler.step(val_loss)  # Metric-based scheduler
+            else:
+                self.scheduler.step()  # Step-based scheduler
 
 
 # Example usage:
 # from torch.optim import Adam
-# from torch.optim.lr_scheduler import ReduceLROnPlateau
+# from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
 # from torch.nn import BCEWithLogitsLoss
 # from your_model_module import YourModel
 # from your_dataset_module import train_loader, val_loader
@@ -138,8 +155,8 @@ class ICNTrainer:
 # model = YourModel()
 # criterion = BCEWithLogitsLoss()
 # optimizer = Adam(model.parameters(), lr=1e-3)
-# scheduler = ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.1)
+# scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
 # loaders = {"train": train_loader, "val": val_loader}
 #
 # trainer = ICNTrainer(device=torch.device("cuda"), model=model, loaders=loaders, criterion=criterion, optimizer=optimizer, scheduler=scheduler)
-# trainer.fit()
+# trainer.fit(early_stopping=True)
