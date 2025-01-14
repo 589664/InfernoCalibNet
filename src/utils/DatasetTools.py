@@ -109,3 +109,90 @@ def preprocess_and_split_csv() -> dict:
 # Example usage:
 # stats = preprocess_and_split_csv()
 # print(stats)
+# __________________________________________________________________________________
+
+
+def inspect_distribution(split: str) -> dict:
+    # Load the CSV
+    metadata = pd.read_csv(os.path.join(OUT_DIR, f"{split}.csv"))
+
+    # Ensure MultiHotLabels column exists
+    if "MultiHotLabels" not in metadata.columns:
+        raise ValueError("The provided CSV does not contain 'MultiHotLabels'.")
+
+    # Convert MultiHotLabels from strings to lists
+    metadata["MultiHotLabels"] = metadata["MultiHotLabels"].apply(eval)
+
+    # Initialize counts for each class
+    class_counts = {disease: 0 for disease in DISEASE_LABELS}
+
+    # Count occurrences of each class
+    for labels in metadata["MultiHotLabels"]:
+        for idx, present in enumerate(labels):
+            if present:
+                class_counts[DISEASE_LABELS[idx]] += 1
+
+    # Calculate total number of samples
+    total_samples = len(metadata)
+
+    # Calculate percentages for each class
+    class_percentages = {
+        disease: (count / total_samples) * 100
+        for disease, count in class_counts.items()
+    }
+
+    # Combine counts and percentages
+    distribution_stats = {
+        "class_counts": class_counts,
+        "class_percentages": class_percentages,
+        "total_samples": total_samples,
+    }
+
+    return distribution_stats
+
+
+# Example usage:
+# distribution = inspect_distribution("train")
+# print(distribution)
+# __________________________________________________________________________________
+
+
+def calculate_class_weights(split: str) -> tuple:
+    metadata = pd.read_csv(os.path.join(OUT_DIR, f"{split}.csv"))
+
+    if "MultiHotLabels" not in metadata.columns:
+        raise ValueError("The provided CSV does not contain 'MultiHotLabels'.")
+
+    metadata["MultiHotLabels"] = metadata["MultiHotLabels"].apply(eval)
+
+    # Initialize counts for positives and negatives
+    positive_counts = [0] * len(DISEASE_LABELS)
+    total_samples = len(metadata)
+
+    for labels in metadata["MultiHotLabels"]:
+        for idx, present in enumerate(labels):
+            if present:
+                positive_counts[idx] += 1
+
+    negative_counts = [total_samples - pos_count for pos_count in positive_counts]
+
+    # Compute weights as the ratio of negatives to positives
+    class_weights = [
+        neg / (pos + 1e-6) for pos, neg in zip(positive_counts, negative_counts)
+    ]
+
+    # Convert to tensor
+    class_weights = torch.tensor(class_weights, dtype=torch.float32)
+
+    # Create a dictionary mapping labels to weights
+    weights_dict = {
+        DISEASE_LABELS[i]: class_weights[i].item() for i in range(len(DISEASE_LABELS))
+    }
+
+    return class_weights, weights_dict
+
+
+# class_weights, weights_dict = calculate_class_weights("train")
+# print(class_weights)
+# print(weights_dict)
+# __________________________________________________________________________________
