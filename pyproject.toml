@@ -20,7 +20,11 @@ dependencies = [
   "rich",
   "torchmetrics",
   "InquirerPy",
-  "tqdm"
+  "tqdm",
+  "iterative-stratification",
+  "optuna",
+  "torchinfo",
+  "tensorboard",
 ]
 requires-python = ">=3.11.9"
 description = "Calibrating neural networks with Bayesian nonparametric regression (Inferno) to quantify uncertainty and improve prediction reliability."
