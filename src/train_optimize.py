@@ -105,6 +105,11 @@ def optimize_hyperparams() -> None:
         # Initialize model
         model = XrayResNet(model_type="resnet50")
 
+        # Freeze all layers except `layer4` and `fc`
+        for name, param in model.named_parameters():
+            if "layer4" not in name and "fc" not in name:
+                param.requires_grad = False
+
         # Define criterion
         criterion = BCEWithLogitsLoss()
 
@@ -127,7 +132,9 @@ def optimize_hyperparams() -> None:
         )
 
         # Train and validate
-        trainer.fit(early_stopping=True)
+        trainer.fit(
+            early_stopping=True, gradual_unfreeze=[(5, "layer3"), (10, "layer2")]
+        )
 
         # Return validation loss for Optuna
         return trainer.best_val_loss
