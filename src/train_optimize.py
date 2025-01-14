@@ -5,11 +5,23 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn import BCEWithLogitsLoss
 from torch.utils.data import DataLoader
+from torchmetrics.classification import MultilabelAUROC, MultilabelF1Score
 from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
+from tqdm.rich import tqdm
 from rich import print
 
-from config import LR, BATCH_SZ, NUM_WRKRS, IMG_SIZE, CHANNELS, OPTUNA_PATH, OUT_DIR
+from config import (
+    LR,
+    BATCH_SZ,
+    NUM_WRKRS,
+    IMG_SIZE,
+    CHANNELS,
+    OPTUNA_PATH,
+    OUT_DIR,
+    MODEL_DIR,
+    NUM_CL,
+)
 from src.NNModels import XrayResNet
 from src.ICNTrainer import ICNTrainer
 from src.XrayDataset import XrayDataset
@@ -150,3 +162,53 @@ def optimize_hyperparams() -> None:
 
     # Print best trial
     print("Best trial:", study.best_trial)
+
+
+def run_testing() -> None:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Load the test dataset
+    test_dataset = XrayDataset(split="test", augmentations=False)
+
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=BATCH_SZ,
+        shuffle=False,
+        num_workers=NUM_WRKRS,
+        pin_memory=True,
+    )
+
+    # Initialize the model and load trained weights
+    model = XrayResNet(model_type="resnet50")
+    model.load_state_dict(torch.load(MODEL_DIR, weights_only=True))
+    model.to(device)
+    model.eval()
+
+    total_loss = 0.0
+    criterion = BCEWithLogitsLoss()
+
+    auroc = MultilabelAUROC(num_labels=NUM_CL).to(device)
+    f1_score = MultilabelF1Score(num_labels=NUM_CL).to(device)
+
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="[blue]Testing"):
+            images, labels = batch
+            images, labels = images.to(device), labels.to(device)
+
+            # Forward pass
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            total_loss += loss.item()
+
+            # Update metrics
+            auroc.update(outputs, labels.int())
+            f1_score.update(outputs, labels.int())
+
+    # Compute final metrics
+    avg_loss = total_loss / len(test_loader)
+    test_auroc = auroc.compute().item()
+    test_f1 = f1_score.compute().item()
+
+    print(f"[green]Test Loss: {avg_loss:.4f}")
+    print(f"[green]Test AUROC: {test_auroc:.4f}")
+    print(f"[green]Test F1 Score: {test_f1:.4f}")
