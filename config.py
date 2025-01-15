@@ -9,6 +9,7 @@ STD = 0.229
 CHANNELS = 1
 
 # Model and Data Parameters
+MODEL = "resnet50"
 IMG_SIZE = 224
 EPOCHS = 25
 BATCH_SZ = 32

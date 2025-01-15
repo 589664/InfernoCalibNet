@@ -21,16 +21,48 @@ from config import (
     OUT_DIR,
     MODEL_DIR,
     NUM_CL,
+    DISEASE_LABELS,
+    XRAY_DIR,
 )
 from src.NNModels import XrayResNet
 from src.ICNTrainer import ICNTrainer
 from src.XrayDataset import XrayDataset
 from src.utils.DatasetTools import preprocess_and_split_csv, calculate_class_weights
+from .testing import predict_on_image
 
 
 def preprocess_and_display_stats() -> None:
     stats = preprocess_and_split_csv()
     print(stats)
+
+
+def log_tensorboard_graph() -> None:
+    device = torch.device("cuda")
+    model = XrayResNet(model_type="resnet101")
+
+    # Print model summary
+    summary(model, input_size=(BATCH_SZ, CHANNELS, IMG_SIZE, IMG_SIZE), depth=2)
+
+    # Initialize TensorBoard writer
+    writer = SummaryWriter(log_dir=os.path.join(OUT_DIR, "tensorboard_logs"))
+
+    # Create a dummy input tensor with BATCH_SZ
+    dummy_input = torch.randn(BATCH_SZ, CHANNELS, IMG_SIZE, IMG_SIZE).to(device)
+
+    # Add the model graph to TensorBoard
+    writer.add_graph(model, dummy_input)
+
+    # Test the model with the dummy input
+    model.to(device)
+    model.eval()  # Set the model to evaluation mode
+    with torch.no_grad():
+        dummy_output = model(dummy_input)
+    print(
+        f"Dummy Output Shape: {dummy_output.shape}"
+    )  # Log the output shape for verification
+
+    # Close the TensorBoard writer
+    writer.close()
 
 
 def run_training() -> None:
@@ -57,14 +89,8 @@ def run_training() -> None:
         pin_memory=True,
     )
 
-    # Initialize model and print summary/tensorboard graph
+    # Initialize model
     model = XrayResNet(model_type="resnet152")
-    summary(model, input_size=(BATCH_SZ, CHANNELS, IMG_SIZE, IMG_SIZE), depth=2)
-
-    # writer = SummaryWriter(log_dir=os.path.join(OUT_DIR, "tensorboard_logs"))
-    # dummy_input = torch.randn(1, CHANNELS, IMG_SIZE, IMG_SIZE).to(device)
-    # writer.add_graph(model, dummy_input)
-    # writer.close()
 
     # Freeze all layers except `layer4` and `fc`
     for name, param in model.named_parameters():
@@ -187,8 +213,8 @@ def run_testing() -> None:
     total_loss = 0.0
     criterion = BCEWithLogitsLoss()
 
-    auroc = MultilabelAUROC(num_labels=NUM_CL).to(device)
-    f1_score = MultilabelF1Score(num_labels=NUM_CL).to(device)
+    auroc = MultilabelAUROC(num_labels=NUM_CL, average=None).to(device)
+    f1_score = MultilabelF1Score(num_labels=NUM_CL, average=None).to(device)
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="[blue]Testing"):
@@ -206,9 +232,9 @@ def run_testing() -> None:
 
     # Compute final metrics
     avg_loss = total_loss / len(test_loader)
-    test_auroc = auroc.compute().item()
-    test_f1 = f1_score.compute().item()
+    test_auroc = auroc.compute()
+    test_f1 = f1_score.compute()
 
     print(f"[green]Test Loss: {avg_loss:.4f}")
-    print(f"[green]Test AUROC: {test_auroc:.4f}")
-    print(f"[green]Test F1 Score: {test_f1:.4f}")
+    for disease, auroc_score, f1_score_val in zip(DISEASE_LABELS, test_auroc, test_f1):
+        print(f"[green]{disease}: AUROC: {auroc_score:.4f}, F1: {f1_score_val:.4f}")
