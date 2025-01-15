@@ -58,7 +58,7 @@ def run_training() -> None:
     )
 
     # Initialize model and print summary/tensorboard graph
-    model = XrayResNet(model_type="resnet50")
+    model = XrayResNet(model_type="resnet152")
     summary(model, input_size=(BATCH_SZ, CHANNELS, IMG_SIZE, IMG_SIZE), depth=2)
 
     # writer = SummaryWriter(log_dir=os.path.join(OUT_DIR, "tensorboard_logs"))
@@ -87,7 +87,7 @@ def run_training() -> None:
         optimizer=optimizer,
         scheduler=scheduler,
     )
-    trainer.fit(early_stopping=True, gradual_unfreeze=[(5, "layer3"), (10, "layer2")])
+    trainer.fit(early_stopping=True, gradual_unfreeze=[(10, "layer3"), (20, "layer2")])
 
 
 def optimize_hyperparams() -> None:

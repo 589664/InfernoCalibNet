@@ -11,12 +11,12 @@ CHANNELS = 1
 # Model and Data Parameters
 IMG_SIZE = 224
 EPOCHS = 25
-BATCH_SZ = 16
-LR = 0.00045
+BATCH_SZ = 32
+LR = 0.0004
 NUM_CL = 13
 NUM_WRKRS = 8
 DROP_RATE = 0.46
-PATIENCE = 10
+PATIENCE = 7
 
 # Dataset distribution
 RAND_STATE = 42
@@ -40,7 +40,7 @@ DISEASE_LABELS = [
     "Pneumothorax",
 ]
 
-WANDB = "HyperParamOPT_project"
+WANDB = "InfernoCalibNet_project"
 
 # Define paths relative to the root directory
 ROOT_DIR = Path(__file__).parent
