@@ -66,8 +66,13 @@ def preprocess_and_split_csv() -> dict:
     shuffled_ids = torch.randperm(len(patient_ids)).tolist()
 
     # Calculate split indices
-    train_end = int(len(patient_ids) * TRAIN_PCT)
-    val_end = train_end + int(len(patient_ids) * VAL_PCT)
+    total_size = len(patient_ids)
+    train_end = int(total_size * TRAIN_PCT)
+    val_end = train_end + int(total_size * VAL_PCT)
+
+    # Adjust to ensure all data is included
+    if train_end + val_end < total_size:
+        val_end = total_size - (train_end + int(total_size * TEST_PCT))
 
     train_ids = patient_ids[shuffled_ids[:train_end]]
     val_ids = patient_ids[shuffled_ids[train_end:val_end]]

@@ -20,9 +20,9 @@ PATIENCE = 10
 
 # Dataset distribution
 RAND_STATE = 42
-TRAIN_PCT = 0.8
+TRAIN_PCT = 0.75
 VAL_PCT = 0.15
-TEST_PCT = 0.05
+TEST_PCT = 0.10
 
 DISEASE_LABELS = [
     "Atelectasis",
