@@ -94,7 +94,7 @@ def run_training() -> None:
     )
 
     # Initialize model
-    model = XrayResNet(model_type="resnet50")
+    model = XrayResNet(model_type="resnet101")
 
     # Define training components
     criterion = BCEWithLogitsLoss()
@@ -106,7 +106,7 @@ def run_training() -> None:
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=MODEL_DIR,
-        filename="resnet50_test1",
+        filename="resnet101_test1",
         save_top_k=1,
         verbose=True,
         monitor="val_loss",

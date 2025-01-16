@@ -9,15 +9,15 @@ STD = 0.2366
 CHANNELS = 1
 
 # Model and Data Parameters
-MODEL = "resnet50"
+MODEL = "resnet101"
 IMG_SIZE = 224
-EPOCHS = 25
-BATCH_SZ = 32
+EPOCHS = 60
+BATCH_SZ = 64
 LR = 1e-3
 NUM_CL = 13
 NUM_WRKRS = 8
 DROP_RATE = 0.46
-PATIENCE = 7
+PATIENCE = 12
 
 # Dataset distribution
 RAND_STATE = 2025
