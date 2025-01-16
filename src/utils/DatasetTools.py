@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import torch
+from sklearn.model_selection import train_test_split
+
 from config import (
     CSV_PATH,
     XRAY_DIR,
@@ -11,6 +13,9 @@ from config import (
     RAND_STATE,
     OUT_DIR,
 )
+
+
+from sklearn.model_selection import train_test_split
 
 
 def preprocess_and_split_csv() -> dict:
@@ -52,39 +57,41 @@ def preprocess_and_split_csv() -> dict:
         lambda labels: [1 if disease in labels else 0 for disease in DISEASE_LABELS]
     )
 
+    # Add a StratifyGroup column based on the first 4 characters of the Finding Labels
+    metadata["StratifyGroup"] = metadata["Labels"].apply(lambda x: x[:4])
+
     # Add ImagePath column with full image paths as the last column
     metadata["ImagePath"] = metadata["ImageID"].apply(lambda x: image_paths[x])
 
     # Keep only the required columns
     metadata = metadata[
-        ["ImageID", "LabelsList", "PatientID", "MultiHotLabels", "ImagePath"]
+        [
+            "ImageID",
+            "LabelsList",
+            "PatientID",
+            "MultiHotLabels",
+            "ImagePath",
+            "StratifyGroup",
+        ]
     ]
 
-    # Group by PatientID to ensure no overlap between splits
-    patient_ids = metadata["PatientID"].unique()
-    torch.manual_seed(RAND_STATE)
-    shuffled_ids = torch.randperm(len(patient_ids)).tolist()
-
-    # Calculate split indices
-    total_size = len(patient_ids)
-    train_end = int(total_size * TRAIN_PCT)
-    val_end = train_end + int(total_size * VAL_PCT)
-
-    # Adjust to ensure all data is included
-    if train_end + val_end < total_size:
-        val_end = total_size - (train_end + int(total_size * TEST_PCT))
-
-    train_ids = patient_ids[shuffled_ids[:train_end]]
-    val_ids = patient_ids[shuffled_ids[train_end:val_end]]
-    test_ids = patient_ids[shuffled_ids[val_end:]]
-
-    # Split metadata into train, validation, and test sets
-    train_metadata = metadata[metadata["PatientID"].isin(train_ids)].reset_index(
-        drop=True
+    # Split metadata into train, validation, and test sets using stratify on StratifyGroup
+    train_data, temp_data = train_test_split(
+        metadata,
+        test_size=1 - TRAIN_PCT,
+        stratify=metadata["StratifyGroup"],
+        random_state=RAND_STATE,
     )
-    val_metadata = metadata[metadata["PatientID"].isin(val_ids)].reset_index(drop=True)
-    test_metadata = metadata[metadata["PatientID"].isin(test_ids)].reset_index(
-        drop=True
+
+    val_size_adjusted = VAL_PCT / (
+        VAL_PCT + TEST_PCT
+    )  # Adjust validation size relative to remaining data
+
+    val_data, test_data = train_test_split(
+        temp_data,
+        test_size=1 - val_size_adjusted,
+        stratify=temp_data["StratifyGroup"],
+        random_state=RAND_STATE,
     )
 
     # Save the split datasets to CSV files
@@ -93,15 +100,15 @@ def preprocess_and_split_csv() -> dict:
     val_csv_path = os.path.join(OUT_DIR, "validate.csv")
     test_csv_path = os.path.join(OUT_DIR, "test.csv")
 
-    train_metadata.to_csv(train_csv_path, index=False)
-    val_metadata.to_csv(val_csv_path, index=False)
-    test_metadata.to_csv(test_csv_path, index=False)
+    train_data.to_csv(train_csv_path, index=False)
+    val_data.to_csv(val_csv_path, index=False)
+    test_data.to_csv(test_csv_path, index=False)
 
     # Return statistics
     stats = {
-        "train_size": len(train_metadata),
-        "validate_size": len(val_metadata),
-        "test_size": len(test_metadata),
+        "train_size": len(train_data),
+        "validate_size": len(val_data),
+        "test_size": len(test_data),
         "total_size": len(metadata),
         "train_csv_path": train_csv_path,
         "validate_csv_path": val_csv_path,

@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 
 # Normalization values
-# MEAN = 0.5463
-# STD = 0.2366
-MEAN = 0.485
-STD = 0.229
+MEAN = 0.5463
+STD = 0.2366
+# MEAN = 0.485
+# STD = 0.229
 CHANNELS = 1
 
 # Model and Data Parameters
@@ -13,14 +13,14 @@ MODEL = "resnet50"
 IMG_SIZE = 224
 EPOCHS = 25
 BATCH_SZ = 32
-LR = 0.0004
+LR = 1e-3
 NUM_CL = 13
 NUM_WRKRS = 8
 DROP_RATE = 0.46
 PATIENCE = 7
 
 # Dataset distribution
-RAND_STATE = 42
+RAND_STATE = 2025
 TRAIN_PCT = 0.75
 VAL_PCT = 0.15
 TEST_PCT = 0.10
