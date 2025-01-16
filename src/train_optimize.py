@@ -22,13 +22,18 @@ from config import (
     MODEL_DIR,
     NUM_CL,
     DISEASE_LABELS,
-    XRAY_DIR,
+    PATIENCE,
+    EPOCHS,
+    WANDB,
 )
 from src.NNModels import XrayResNet
 from src.ICNTrainer import ICNTrainer
 from src.XrayDataset import XrayDataset
-from src.utils.DatasetTools import preprocess_and_split_csv, calculate_class_weights
-from .testing import predict_on_image
+from src.utils.DatasetTools import preprocess_and_split_csv
+
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 
 def preprocess_and_display_stats() -> None:
@@ -66,12 +71,9 @@ def log_tensorboard_graph() -> None:
 
 
 def run_training() -> None:
-    device = torch.device("cuda")
-
     # Load datasets
     train_dataset = XrayDataset(split="train", augmentations=True)
     validate_dataset = XrayDataset(split="validate", augmentations=False)
-    test_dataset = XrayDataset(split="test", augmentations=False)
 
     # Create DataLoader objects
     train_loader = DataLoader(
@@ -80,6 +82,7 @@ def run_training() -> None:
         shuffle=True,
         num_workers=NUM_WRKRS,
         pin_memory=True,
+        persistent_workers=True,  # Enable persistent workers for efficiency
     )
     val_loader = DataLoader(
         validate_dataset,
@@ -87,33 +90,53 @@ def run_training() -> None:
         shuffle=False,
         num_workers=NUM_WRKRS,
         pin_memory=True,
+        persistent_workers=True,  # Enable persistent workers for efficiency
     )
 
     # Initialize model
-    model = XrayResNet(model_type="resnet152")
-
-    # Freeze all layers except `layer4` and `fc`
-    for name, param in model.named_parameters():
-        if "layer4" not in name and "fc" not in name:
-            param.requires_grad = False
+    model = XrayResNet(model_type="resnet50")
 
     # Define training components
     criterion = BCEWithLogitsLoss()
     optimizer = Adam(model.parameters(), lr=LR)
-    scheduler = ReduceLROnPlateau(optimizer, mode="min", patience=7, factor=0.4)
+    scheduler = ReduceLROnPlateau(optimizer, mode="min", patience=5, factor=0.2)
 
-    loaders = {"train": train_loader, "val": val_loader}
+    # Initialize trainer
+    lightning_model = ICNTrainer(model, criterion, optimizer, scheduler)
 
-    # Initialize and run trainer
-    trainer = ICNTrainer(
-        device=device,
-        model=model,
-        loaders=loaders,
-        criterion=criterion,
-        optimizer=optimizer,
-        scheduler=scheduler,
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=MODEL_DIR,
+        filename="resnet50_test1",
+        save_top_k=1,
+        verbose=True,
+        monitor="val_loss",
+        mode="min",
     )
-    trainer.fit(early_stopping=True, gradual_unfreeze=[(10, "layer3"), (20, "layer2")])
+
+    early_stopping_callback = EarlyStopping(
+        monitor="val_loss",
+        patience=PATIENCE,
+        verbose=True,
+        mode="min",
+    )
+
+    wandb_logger = WandbLogger(
+        project=WANDB,
+        log_model=True,
+        config={"learning_rate": LR, "batch_size": BATCH_SZ, "epochs": EPOCHS},
+    )
+
+    trainer = pl.Trainer(
+        max_epochs=EPOCHS,
+        logger=wandb_logger,
+        callbacks=[checkpoint_callback, early_stopping_callback],
+        log_every_n_steps=10,
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        devices=1 if torch.cuda.is_available() else None,
+    )
+
+    # Run training
+    trainer.fit(lightning_model, train_loader, val_loader)
 
 
 def optimize_hyperparams() -> None:
