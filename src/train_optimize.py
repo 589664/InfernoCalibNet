@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import optuna
 import torch
 from torch.optim import Adam
@@ -215,7 +216,6 @@ def optimize_hyperparams() -> None:
 
 def run_testing() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # Load the test dataset
     test_dataset = XrayDataset(split="test", augmentations=False)
 
@@ -227,11 +227,20 @@ def run_testing() -> None:
         pin_memory=True,
     )
 
-    # Initialize the model and load trained weights
-    model = XrayResNet(model_type="resnet50")
-    model.load_state_dict(torch.load(MODEL_DIR, weights_only=True))
-    model.to(device)
-    model.eval()
+    # Load the Lightning module with the checkpoint
+    checkpoint_path = MODEL_DIR / "resnet101_test1.ckpt"
+    lightning_model = ICNTrainer.load_from_checkpoint(
+        checkpoint_path=checkpoint_path,
+        model=XrayResNet(model_type="resnet101"),
+        criterion=BCEWithLogitsLoss(),
+        optimizer=None,  # Optimizer is not needed for testing
+        scheduler=None,  # Scheduler is not needed for testing
+    )
+
+    # Extract the underlying PyTorch model weights
+    model = lightning_model.model
+    model = model.to(device="cuda")  # Set the model to use CUDA
+    model.eval()  # Set the model to evaluation mode
 
     total_loss = 0.0
     criterion = BCEWithLogitsLoss()
