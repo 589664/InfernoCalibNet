@@ -48,7 +48,7 @@ ROOT_DIR = Path(__file__).parent
 
 XRAY_DIR = ROOT_DIR / "data" / "raw" / "xrays"
 CSV_PATH = ROOT_DIR / "data" / "raw" / "xraysMD.csv"
-OUT_DIR = ROOT_DIR / "data" / "refined"
+OUT_DIR = ROOT_DIR / "data" / "refined" / "binary_classification"
 MODEL_DIR = ROOT_DIR / "data" / "models"
 OPTUNA_PATH = ROOT_DIR / "data" / "refined" / "hyperParamXray_trial_1.db"
 
