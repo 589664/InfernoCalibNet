@@ -6,11 +6,11 @@ import torchvision.transforms as T
 from PIL import Image
 
 
-# Custom Dataset Class
 class ChestXRayDataset(Dataset):
-    def __init__(self, csv_file, transform=True):
+    def __init__(self, csv_file, transform=True, return_aux=False):
         self.data = pd.read_csv(csv_file)
         self.transform = transform
+        self.return_aux = return_aux
 
         # Augmentation for training
         self.augmentation_transform = T.Compose(
@@ -40,11 +40,31 @@ class ChestXRayDataset(Dataset):
         image = Image.open(img_path).convert("L")  # Convert to grayscale
         label = torch.tensor(self.data.iloc[idx]["CLASS"], dtype=torch.long)
 
-        # Apply augmentation only if transform is enabled (assumed to be training set)
+        # Extract auxiliary data if return_aux is enabled
+        aux_data = (
+            {
+                key: self.data.iloc[idx][key]
+                for key in [
+                    "DISEASELABEL",
+                    "FOLLOWUP",
+                    "PATID",
+                    "AGE",
+                    "GENDER",
+                    "VP",
+                    "IMGPATH",
+                ]
+            }
+            if self.return_aux
+            else None
+        )
+
+        # Apply augmentation only if transform is enabled
         if self.transform:
             image = self.augmentation_transform(image)
 
         # Apply base transformation to all images
         image = self.base_transform(image)
 
+        if self.return_aux:
+            return image, label, aux_data
         return image, label
