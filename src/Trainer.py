@@ -1,9 +1,5 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score
 from rich.console import Console
 from tqdm.rich import tqdm
 import wandb
@@ -36,6 +32,9 @@ class Trainer:
         self.scheduler = scheduler
         self.device = device
         self.epoch = 0
+        self.patience = 3
+        self.best_val_loss = float("inf")
+        self.early_stop_counter = 0
 
         # Initialize Weights & Biases
         wandb.init(
@@ -64,37 +63,31 @@ class Trainer:
             )
 
             self.optimizer.zero_grad()
-            outputs = self.model(images).squeeze()
-            loss = self.criterion(outputs, labels.float())
+            outputs = self.model(images)
+            loss = self.criterion(outputs, labels)
 
             loss.backward()
             self.optimizer.step()
 
             running_loss += loss.item()
-            all_preds.extend(outputs.detach().cpu().numpy())  # Store raw logits
+            all_preds.extend(torch.argmax(outputs, dim=1).cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
-        # Convert logits to probabilities
-        prob_preds = torch.sigmoid(torch.tensor(all_preds)).numpy()
-        binary_preds = (prob_preds > 0.5).astype(int)
-
         avg_loss = running_loss / len(self.train_loader)
-        accuracy = accuracy_score(all_labels, binary_preds)
-        roc_auc = roc_auc_score(all_labels, prob_preds)
-        f1 = f1_score(all_labels, binary_preds)
+        accuracy = accuracy_score(all_labels, all_preds)
+        f1 = f1_score(all_labels, all_preds, average="weighted")
 
         # Log metrics in Weights & Biases
         wandb.log(
             {
                 "train_loss": avg_loss,
                 "train_accuracy": accuracy,
-                "train_roc_auc": roc_auc,
                 "train_f1": f1,
             },
             step=self.epoch,
         )
 
-        return avg_loss, accuracy, roc_auc, f1
+        return avg_loss, accuracy, f1
 
     def validate(self):
         self.model.eval()
@@ -113,60 +106,69 @@ class Trainer:
                     self.device, non_blocking=True
                 )
 
-                outputs = self.model(images).squeeze()
-                loss = self.criterion(outputs, labels.float())
+                outputs = self.model(images)
+                loss = self.criterion(outputs, labels)
 
                 running_loss += loss.item()
-                all_preds.extend(outputs.cpu().numpy())  # Store raw logits
+                all_preds.extend(torch.argmax(outputs, dim=1).cpu().numpy())
                 all_labels.extend(labels.cpu().numpy())
 
-        # Convert logits to probabilities
-        prob_preds = torch.sigmoid(torch.tensor(all_preds)).numpy()
-        binary_preds = (prob_preds > 0.5).astype(int)
-
         avg_loss = running_loss / len(self.val_loader)
-        accuracy = accuracy_score(all_labels, binary_preds)
-        roc_auc = roc_auc_score(all_labels, prob_preds)
-        f1 = f1_score(all_labels, binary_preds)
+        accuracy = accuracy_score(all_labels, all_preds)
+        f1 = f1_score(all_labels, all_preds, average="weighted")
 
         # Log validation metrics in Weights & Biases
         wandb.log(
             {
                 "val_loss": avg_loss,
                 "val_accuracy": accuracy,
-                "val_roc_auc": roc_auc,
                 "val_f1": f1,
             },
             step=self.epoch,
         )
 
-        return avg_loss, accuracy, roc_auc, f1
+        return avg_loss, accuracy, f1
 
     def train(self, num_epochs):
         for epoch in range(num_epochs):
             self.epoch = epoch
             console.print(f"\n[bold yellow]Epoch {epoch+1}/{num_epochs}[/]")
-            train_loss, train_acc, train_auc, train_f1 = self.train_one_epoch()
-            val_loss, val_acc, val_auc, val_f1 = self.validate()
+            train_loss, train_acc, train_f1 = self.train_one_epoch()
+            val_loss, val_acc, val_f1 = self.validate()
 
             if self.scheduler:
-                self.scheduler.step(val_loss)
+                self.scheduler.step()
 
             console.print(
-                f"Train Loss: {train_loss:.4f} | Accuracy: {train_acc:.4f} | AUC: {train_auc:.4f} | F1: {train_f1:.4f}"
+                f"Train Loss: {train_loss:.4f} | Accuracy: {train_acc:.4f} | F1: {train_f1:.4f}"
             )
             console.print(
-                f"Val Loss: {val_loss:.4f} | Accuracy: {val_acc:.4f} | AUC: {val_auc:.4f} | F1: {val_f1:.4f}\n"
+                f"Val Loss:   {val_loss:.4f} | Accuracy: {val_acc:.4f} | F1: {val_f1:.4f}\n"
             )
+
+            # Early stopping logic for overfitting detection
+            if val_loss < self.best_val_loss:
+                self.best_val_loss = val_loss
+                self.best_train_loss = train_loss
+                self.early_stop_counter = 0
+                model_path = OUT_DIR / "InfernoCalibNet_model.pth"
+                torch.save(self.model.state_dict(), model_path)
+                console.print("[bold green]Model saved as InfernoCalibNet_model.pth[/]")
+                wandb.save(str(model_path), base_path=str(OUT_DIR))
+            elif (
+                train_loss < self.best_train_loss * 0.9
+            ):  # Check if training loss keeps dropping while val loss stagnates
+                self.early_stop_counter += 1
+                console.print(
+                    f"[bold red]Potential overfitting detected. Early stopping counter: {self.early_stop_counter}/{self.patience}[/]"
+                )
+            else:
+                self.early_stop_counter = 0  # Reset if no overfitting detected
+
+            if self.early_stop_counter >= self.patience:
+                console.print(
+                    "[bold red]Early stopping triggered due to overfitting![/]"
+                )
+                break
 
         wandb.finish()
-
-
-# Example Usage
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model = ResNetModel(num_classes=1)
-# criterion = nn.BCEWithLogitsLoss()
-# optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=0.001)
-# scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=3)
-# trainer = Trainer(model, train_loader, val_loader, criterion, optimizer, device, scheduler)
-# trainer.train(num_epochs=10)

@@ -12,15 +12,12 @@ class ChestXRayDataset(Dataset):
         self.data = pd.read_csv(csv_file)
         self.transform = transform
 
-        # Define diseases that should receive augmentation
-        self.augmented_diseases = {}
-
-        # Define augmentation transformation (only for training)
+        # Augmentation for training
         self.augmentation_transform = T.Compose(
             [
-                T.RandomRotation(degrees=10),
-                T.RandomAffine(degrees=0, translate=(0.05, 0.05)),
-                T.GaussianBlur(kernel_size=3, sigma=(0.05, 0.15)),
+                T.RandomRotation(degrees=13),
+                T.RandomAffine(degrees=0, translate=(0.06, 0.06)),
+                T.RandomResizedCrop(size=(256, 256), scale=(0.75, 1.0)),
             ]
         )
 
@@ -41,13 +38,10 @@ class ChestXRayDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.data.iloc[idx]["IMGPATH"]
         image = Image.open(img_path).convert("L")  # Convert to grayscale
-        label = torch.tensor(self.data.iloc[idx]["HOTLABEL"], dtype=torch.long)
+        label = torch.tensor(self.data.iloc[idx]["CLASS"], dtype=torch.long)
 
-        # Apply augmentation only to selected diseases in training mode
-        if (
-            self.transform
-            and self.data.iloc[idx]["DISEASELABEL"] in self.augmented_diseases
-        ):
+        # Apply augmentation only if transform is enabled (assumed to be training set)
+        if self.transform:
             image = self.augmentation_transform(image)
 
         # Apply base transformation to all images

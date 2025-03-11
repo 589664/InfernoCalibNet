@@ -1,5 +1,5 @@
 from src.Dataset import ChestXRayDataset
-from src.CNNModel import ResNetBinaryClassifier
+from src.Model import InfernoCalibNet
 from src.Trainer import Trainer
 
 from config import (
@@ -28,30 +28,20 @@ def runTraining():
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = ResNetBinaryClassifier().to(device)
+    model = InfernoCalibNet(num_classes=3).to(device)
 
-    # ** Freeze Early Layers (Low-Level Features) **
-    # for param in model.backbone.conv1.parameters():
-    #     param.requires_grad = False
-    # for param in model.backbone.layer1.parameters():
-    #     param.requires_grad = False
-    # for param in model.backbone.layer2.parameters():
-    #     param.requires_grad = False
-
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
-        lr=1e-4,
-        weight_decay=1e-4,
+        lr=3e-4,
+        weight_decay=5e-4,
     )
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.2, patience=2, min_lr=1e-6
-    )
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.63)
 
     trainer = Trainer(
         model, train_loader, val_loader, criterion, optimizer, device, scheduler
     )
-    trainer.train(num_epochs=10)
+    trainer.train(num_epochs=15)
 
 
 runTraining()
