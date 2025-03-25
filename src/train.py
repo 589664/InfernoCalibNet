@@ -13,12 +13,11 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-
 def runTraining():
-    torch.cuda.empty_cache()  # Clear unused GPU memory
+    torch.cuda.empty_cache()
 
-    train_dt = ChestXRayDataset(OUT_DIR / "train.csv", transform=True)
-    val_dt = ChestXRayDataset(OUT_DIR / "val.csv", transform=False)
+    train_dt = ChestXRayDataset(OUT_DIR / "binary_train.csv", transform=True)
+    val_dt = ChestXRayDataset(OUT_DIR / "binary_val.csv", transform=False)
 
     train_loader = DataLoader(
         train_dt, batch_size=32, shuffle=True, num_workers=4, pin_memory=True
@@ -28,9 +27,9 @@ def runTraining():
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = InfernoCalibNet(num_classes=3).to(device)
+    model = InfernoCalibNet(num_classes=1).to(device)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=3e-4,

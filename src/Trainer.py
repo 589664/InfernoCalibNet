@@ -10,8 +10,6 @@ from config import OUT_DIR
 warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 
 console = Console()
-
-
 class Trainer:
     def __init__(
         self,
@@ -22,7 +20,7 @@ class Trainer:
         optimizer,
         device,
         scheduler=None,
-        project_name="InfernoCalibNet",
+        project_name="InfernoCalibNetBinary",
     ):
         self.model = model.to(device)
         self.train_loader = train_loader
@@ -36,7 +34,6 @@ class Trainer:
         self.best_val_loss = float("inf")
         self.early_stop_counter = 0
 
-        # Initialize Weights & Biases
         wandb.init(
             project=project_name,
             config={
@@ -58,26 +55,25 @@ class Trainer:
             leave=False,
         ):
             images, labels = batch
-            images, labels = images.to(self.device, non_blocking=True), labels.to(
-                self.device, non_blocking=True
-            )
+            images = images.to(self.device, non_blocking=True)
+            labels = labels.float().to(self.device, non_blocking=True)
 
             self.optimizer.zero_grad()
-            outputs = self.model(images)
+            outputs = self.model(images).squeeze(1)
             loss = self.criterion(outputs, labels)
 
             loss.backward()
             self.optimizer.step()
 
             running_loss += loss.item()
-            all_preds.extend(torch.argmax(outputs, dim=1).cpu().numpy())
+            preds = (torch.sigmoid(outputs) > 0.5).int()
+            all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
         avg_loss = running_loss / len(self.train_loader)
         accuracy = accuracy_score(all_labels, all_preds)
-        f1 = f1_score(all_labels, all_preds, average="weighted")
+        f1 = f1_score(all_labels, all_preds, average="binary")
 
-        # Log metrics in Weights & Biases
         wandb.log(
             {
                 "train_loss": avg_loss,
@@ -102,22 +98,21 @@ class Trainer:
                 leave=False,
             ):
                 images, labels = batch
-                images, labels = images.to(self.device, non_blocking=True), labels.to(
-                    self.device, non_blocking=True
-                )
+                images = images.to(self.device, non_blocking=True)
+                labels = labels.float().to(self.device, non_blocking=True)
 
-                outputs = self.model(images)
+                outputs = self.model(images).squeeze(1)
                 loss = self.criterion(outputs, labels)
 
                 running_loss += loss.item()
-                all_preds.extend(torch.argmax(outputs, dim=1).cpu().numpy())
+                preds = (torch.sigmoid(outputs) > 0.5).int()
+                all_preds.extend(preds.cpu().numpy())
                 all_labels.extend(labels.cpu().numpy())
 
         avg_loss = running_loss / len(self.val_loader)
         accuracy = accuracy_score(all_labels, all_preds)
-        f1 = f1_score(all_labels, all_preds, average="weighted")
+        f1 = f1_score(all_labels, all_preds, average="binary")
 
-        # Log validation metrics in Weights & Biases
         wandb.log(
             {
                 "val_loss": avg_loss,
@@ -146,29 +141,24 @@ class Trainer:
                 f"Val Loss:   {val_loss:.4f} | Accuracy: {val_acc:.4f} | F1: {val_f1:.4f}\n"
             )
 
-            # Early stopping logic for overfitting detection
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 self.best_train_loss = train_loss
                 self.early_stop_counter = 0
-                model_path = OUT_DIR / "InfernoCalibNet_model.pth"
+                model_path = OUT_DIR / "InfernoCalibNetBinary.pth"
                 torch.save(self.model.state_dict(), model_path)
-                console.print("[bold green]Model saved as InfernoCalibNet_model.pth[/]")
+                console.print("[bold green]Model saved as InfernoCalibNetBinary.pth[/]")
                 wandb.save(str(model_path), base_path=str(OUT_DIR))
-            elif (
-                train_loss < self.best_train_loss * 0.9
-            ):  # Check if training loss keeps dropping while val loss stagnates
+            elif train_loss < self.best_train_loss * 0.9:
                 self.early_stop_counter += 1
                 console.print(
                     f"[bold red]Potential overfitting detected. Early stopping counter: {self.early_stop_counter}/{self.patience}[/]"
                 )
             else:
-                self.early_stop_counter = 0  # Reset if no overfitting detected
+                self.early_stop_counter = 0
 
             if self.early_stop_counter >= self.patience:
-                console.print(
-                    "[bold red]Early stopping triggered due to overfitting![/]"
-                )
+                console.print("[bold red]Early stopping triggered due to overfitting![/]")
                 break
 
         wandb.finish()
