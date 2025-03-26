@@ -36,10 +36,24 @@ class Trainer:
 
         wandb.init(
             project=project_name,
+            name=f"binary_classification_P7",
             config={
-                "learning_rate": optimizer.param_groups[0]["lr"],
+                "model": "ResNet-34",
+                "image_size": "256x256",
                 "batch_size": train_loader.batch_size,
+                "epochs": 17,
+                "optimizer": "Adam",
+                # "learning_rate": optimizer.param_groups[0]["lr"],
+                "learning_rate_backbone": optimizer.param_groups[0]["lr"],
+                "learning_rate_classifier": optimizer.param_groups[1]["lr"],
+                "weight_decay": optimizer.param_groups[0]["weight_decay"],
+                "lr_step_size": scheduler.step_size if scheduler else None,
+                "lr_gamma": scheduler.gamma if scheduler else None,
+                "architecture": "512 → 128 → 1",
+                "dropout": 0.6,
+                "loss_fn": type(self.criterion).__name__,
                 "device": device.type,
+                "pretrained": "IMAGENET1K_V1"
             },
         )
 

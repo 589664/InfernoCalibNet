@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -26,9 +25,8 @@ class ChestXRayDataset(Dataset):
             [
                 T.Resize((256, 256)),
                 T.ToTensor(),
-                T.Normalize(
-                    mean=[0.485], std=[0.229]
-                ),  # Normalize using standard ImageNet values
+                T.Normalize(mean=[0.07753], std=[1.15581]),
+                # T.Normalize(mean=[0.485], std=[0.229]), # ImageNET
             ]
         )
 
