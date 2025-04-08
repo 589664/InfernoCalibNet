@@ -1,10 +1,8 @@
-import pandas as pd
 import torch
-from torch.utils.data import Dataset
-import torchvision.transforms as T
+import pandas as pd
 from PIL import Image
-
-
+import torchvision.transforms as T
+from torch.utils.data import Dataset
 class ChestXRayDataset(Dataset):
     def __init__(self, csv_file, transform=True, return_aux=False):
         self.data = pd.read_csv(csv_file)
@@ -14,8 +12,9 @@ class ChestXRayDataset(Dataset):
         # Augmentation for training
         self.augmentation_transform = T.Compose(
             [
-                T.RandomRotation(degrees=13),
-                T.RandomAffine(degrees=0, translate=(0.06, 0.06)),
+                T.RandomHorizontalFlip(p=0.5),
+                T.RandomRotation(degrees=15),
+                T.RandomAffine(degrees=0, translate=(0.1, 0.1)),
                 T.RandomResizedCrop(size=(256, 256), scale=(0.75, 1.0)),
             ]
         )
@@ -25,8 +24,7 @@ class ChestXRayDataset(Dataset):
             [
                 T.Resize((256, 256)),
                 T.ToTensor(),
-                T.Normalize(mean=[0.07753], std=[1.15581]),
-                # T.Normalize(mean=[0.485], std=[0.229]), # ImageNET
+                T.Normalize(mean=[0.48613], std=[0.24798]),
             ]
         )
 
@@ -35,8 +33,8 @@ class ChestXRayDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.data.iloc[idx]["IMGPATH"]
-        image = Image.open(img_path).convert("L")  # Convert to grayscale
-        label = torch.tensor(self.data.iloc[idx]["CLASS"], dtype=torch.long)
+        image = Image.open(img_path).convert("L")
+        label = torch.tensor(eval(self.data.iloc[idx]["MULTIHOT"]), dtype=torch.float32)
 
         # Extract auxiliary data if return_aux is enabled
         aux_data = (
