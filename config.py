@@ -4,9 +4,6 @@ from pathlib import Path
 # Normalization values
 MEAN = 0.5463
 STD = 0.2366
-# MEAN = 0.485
-# STD = 0.229
-CHANNELS = 1
 
 # Model and Data Parameters
 MODEL_TYPE = "resnet50"
