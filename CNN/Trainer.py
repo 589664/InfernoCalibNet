@@ -9,7 +9,6 @@ from sklearn.metrics import f1_score, accuracy_score, roc_auc_score, roc_curve, 
 from config import OUT_DIR
 
 warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
-
 console = Console()
 
 class Trainer:
@@ -22,7 +21,6 @@ class Trainer:
         optimizer,
         device,
         scheduler=None,
-        project_name="InfernoCalibNetMultilabel",
     ):
         self.model = model.to(device)
         self.train_loader = train_loader
@@ -35,35 +33,6 @@ class Trainer:
         self.patience = 3
         self.best_val_loss = float("inf")
         self.early_stop_counter = 0
-
-        if not hasattr(self, "logit_stats_table"):
-            self.logit_stats_table = wandb.Table(columns=["label", "value", "epoch"])
-
-        wandb.init(
-            project=project_name,
-            sync_tensorboard=True,
-            name=f"ML_Effusion_Atelectasis",
-            config={
-                "model": "ResNet-34",
-                "image_size": "256x256",
-                "batch_size": train_loader.batch_size,
-                "epochs": 10,
-                "optimizer": "Adam",
-                "learning_rate_backbone": optimizer.param_groups[0]["lr"],
-                "learning_rate_classifier": optimizer.param_groups[1]["lr"],
-                "weight_decay": optimizer.param_groups[0]["weight_decay"],
-                "lr_step_size": scheduler.step_size if scheduler else None,
-                "lr_gamma": scheduler.gamma if scheduler else None,
-                "architecture": "512 → 128 → 2",
-                "dropout": 0.6,
-                "loss_fn": type(self.criterion).__name__,
-                "device": device.type,
-                "pretrained": "IMAGENET1K_V1",
-                "notes": "PA/AP"
-            },
-        )
-        wandb.define_metric("epoch")
-        wandb.define_metric("*", step_metric="epoch")
 
     def train_one_epoch(self):
         self.model.train()

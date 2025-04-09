@@ -1,0 +1,88 @@
+from Trainer import Trainer
+from Model import InfernoCalibNet
+from Dataset import ChestXRayDataset
+
+from config import OUT_DIR
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+
+import wandb
+
+def run_batch_training(runs):
+    torch.cuda.empty_cache()
+
+    train_dt = ChestXRayDataset(OUT_DIR / "ml_train.csv", transform=True)
+    val_dt = ChestXRayDataset(OUT_DIR / "ml_val.csv", transform=False)
+
+    train_loader = DataLoader(
+        train_dt, batch_size=32, shuffle=True, num_workers=8, pin_memory=True
+    )
+    val_loader = DataLoader(
+        val_dt, batch_size=32, shuffle=False, num_workers=8, pin_memory=True
+    )
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    for run_id, params in enumerate(runs):
+        base_lr = params["base_lr"]
+        clf_lr = params["clf_lr"]
+        wd = params["weight_decay"]
+        gamma = params["gamma"]
+        step_size = params["step_size"]
+        num_epochs = params["num_epochs"]
+
+        wandb.init(
+            project="InfernoCalibNetMultilabel",
+            sync_tensorboard=True,
+            name=f"ML_Effusion_Atelectasis",
+            config={
+                "model": "ResNet-34",
+                "image_size": "256x256",
+                "batch_size": train_loader.batch_size,
+                "epochs": num_epochs,
+                "optimizer": "Adam",
+                "learning_rate_backbone": base_lr,
+                "learning_rate_classifier": clf_lr,
+                "weight_decay": wd,
+                "lr_step_size": step_size,
+                "lr_gamma": gamma,
+                "architecture": "512 → 128 → 2",
+                "dropout": 0.6,
+                "loss_fn": "BCEWithLogitsLoss",
+                "device": device.type,
+                "pretrained": "IMAGENET1K_V1",
+                "notes": "PA/AP"
+            },
+        )
+        wandb.define_metric("epoch")
+        wandb.define_metric("*", step_metric="epoch")
+
+        model = InfernoCalibNet(num_classes=2).to(device)
+
+        criterion = nn.BCEWithLogitsLoss()
+        optimizer = optim.Adam([
+            {"params": model.base_model.parameters(), "lr": base_lr},
+            {"params": model.classifier.parameters(), "lr": clf_lr},
+        ], weight_decay=wd)
+
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+
+        writer = SummaryWriter(log_dir=OUT_DIR / "tensorflow")
+
+        dummy_input = torch.randn(32, 1, 256, 256).to(device)
+        writer.add_graph(model, dummy_input)
+
+        trainer = Trainer(
+            model, train_loader, val_loader, criterion, optimizer, device, scheduler
+        )
+        trainer.train(num_epochs=num_epochs)
+
+runs = [
+    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 1e-4, "gamma": 0.5, "step_size": 3, "num_epochs": 1},
+    {"base_lr": 2e-4, "clf_lr": 1e-3, "weight_decay": 3e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 1},
+]
+run_batch_training(runs)

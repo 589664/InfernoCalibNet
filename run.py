@@ -1,6 +1,6 @@
 from rich import print
 from InquirerPy import inquirer
-from src.train import runTraining
+from CNN.train import runTraining
 
 
 if __name__ == "__main__":
