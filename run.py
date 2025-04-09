@@ -1,18 +1,19 @@
-from InquirerPy import inquirer
 from rich import print
-from src.train_optimize import run_training, optimize_hyperparams
+from InquirerPy import inquirer
+from CNN.train import runTraining
+
 
 if __name__ == "__main__":
     mode = inquirer.select(
         message="Choose mode:",
-        choices=["train", "optimize", "exit"],
+        choices=["train", "exit"],
     ).execute()
 
-    if mode == "optimize":
-        optimize_hyperparams()
-    elif mode == "train":
-        run_training()
+    if mode == "train":
+        runTraining()
+
     elif mode == "exit":
         print("[yellow]Exiting.")
+
     else:
         print("[red]Invalid mode selected.")
