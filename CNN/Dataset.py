@@ -4,6 +4,9 @@ from PIL import Image
 import torchvision.transforms as T
 from torch.utils.data import Dataset
 
+#=======================================================================================================================
+# 🚀 Main Code
+#=======================================================================================================================
 class ChestXRayDataset(Dataset):
     def __init__(self, csv_file, transform=True):
         self.data = pd.read_csv(csv_file)
@@ -24,7 +27,9 @@ class ChestXRayDataset(Dataset):
             [
                 T.Resize((256, 256)),
                 T.ToTensor(),
-                T.Normalize(mean=[0.48613], std=[0.24798]),
+                T.Normalize(mean=[0.49765], std=[0.22854]),
+                # Method 1 - Average mean: 0.49765, Average std: 0.22854
+                # Method 2 - Mean: 0.50509, Std: 0.24930
             ]
         )
 

@@ -124,5 +124,10 @@ dmypy.json
 .pyre/
 
 # Custom
-data
 wandb
+*.pth
+tensorflow
+xrays
+atelectasis
+effusion
+etc

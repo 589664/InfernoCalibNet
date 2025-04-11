@@ -6,12 +6,12 @@ library("inferno")
 #=======================================================================================================================
 
 # Base path (relative to project root)
-relative_path <- "data/refined/multilabel/inferno"
+relative_path <- "data/inferno"
 
 # Full file paths
 input_file     <- file.path(relative_path, "calibration_sampled.csv")
 metadata_file  <- file.path(relative_path, "inferno_metadata.csv")
-inferno_dir    <- file.path(relative_path, "inferno_effusion")
+inferno_dir    <- file.path(relative_path, "effusion")
 
 # Parallelism and seed
 parallel_cores <- 7
@@ -27,7 +27,7 @@ inferno_model <- readRDS(file.path(inferno_dir, "learnt.rds"))
 str(inferno_model)
 
 #=======================================================================================================================
-# 📊 Example 1: Predicting for a Single Random Data Point
+# 📊 1: Predicting for a Single Random Data Point
 #=======================================================================================================================
 
 # Load full dataset
@@ -79,7 +79,7 @@ plot(result_probs)
 abline(v = random_row[, "LABEL_EFFUSION"], lty = 2, lwd = 2, col = 2)
 
 #=======================================================================================================================
-# 📊 Example 2: Plot Posterior Distribution for All Variables
+# 📊 2: Plot Posterior Distribution for All Variables
 #=======================================================================================================================
 
 # Check metadata variables
@@ -99,7 +99,7 @@ plotFsamples(
 )
 
 #=======================================================================================================================
-# 📈 Example 3: Visualizing Logit → Posterior Probability Curve
+# 📈 3: Visualizing Logit → Posterior Probability Curve
 #=======================================================================================================================
 
 # Generate grid of logit values
@@ -122,7 +122,7 @@ curve_probs <- Pr(
   X = grid_features,
   learnt = inferno_model,
   nsamples = 100,
-  quantiles = c(0.055, 0.25, 0.75, 0.945),
+  quantiles = c(0.055, 0.945),
   parallel = parallel_cores
 )
 

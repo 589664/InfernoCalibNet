@@ -6,7 +6,7 @@ library("inferno")
 #=======================================================================================================================
 
 # Base path (relative to project root)
-relative_path <- "data/refined/multilabel/inferno"
+relative_path <- "data/inferno"
 
 # Parallelism and seed
 parallel_cores <- 4
@@ -33,15 +33,15 @@ metadatatemplate(
 #=======================================================================================================================
 
 # File paths for Atelectasis
-input_file_ate  <- file.path(relative_path, "calibration_train.csv")
-metadata_ate    <- file.path(relative_path, "metadata_atelectasis.csv")
-output_ate      <- file.path(relative_path, "prior_atelectasis")
+input_file_ate    <- file.path(relative_path, "calibration_train.csv")
+metadata_ate      <- file.path(relative_path, "metadata_atelectasis.csv")
+output_ate        <- file.path(relative_path, "prior_atelectasis")
 
 # Generate metadata template for Atelectasis
 metadatatemplate(
-  data = input_file_ate,
-  file = metadata_ate,
-  includevrt = c("AGE", "GENDER", "VP", "LOGIT_ATELECTASIS", "LABEL_ATELECTASIS")
+  data          = input_file_ate,
+  file          = metadata_ate,
+  includevrt    = c("AGE", "GENDER", "VP", "LOGIT_ATELECTASIS", "LABEL_ATELECTASIS")
 )
 
 #=======================================================================================================================

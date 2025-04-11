@@ -1,16 +1,23 @@
-from Trainer import Trainer
-from Model import InfernoCalibNet
-from Dataset import ChestXRayDataset
+#=======================================================================================================================
+# 📦 External Imports
+#=======================================================================================================================
 
-from config import OUT_DIR
-
+import wandb
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-import wandb
+#=======================================================================================================================
+# 🧩 Internal Imports
+#=======================================================================================================================
+
+from CNN import Trainer, InfernoCalibNet, ChestXRayDataset, OUT_DIR
+
+#=======================================================================================================================
+# 🚀 Main Code
+#=======================================================================================================================
 
 def run_batch_training(runs):
     torch.cuda.empty_cache()
@@ -82,7 +89,7 @@ def run_batch_training(runs):
         trainer.train(num_epochs=num_epochs)
 
 runs = [
-    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 1e-4, "gamma": 0.5, "step_size": 3, "num_epochs": 1},
-    {"base_lr": 2e-4, "clf_lr": 1e-3, "weight_decay": 3e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 1},
+    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 1e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 15},
 ]
+
 run_batch_training(runs)

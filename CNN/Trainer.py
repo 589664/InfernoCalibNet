@@ -6,10 +6,23 @@ from tqdm.rich import tqdm
 from rich.console import Console
 from tqdm import TqdmExperimentalWarning
 from sklearn.metrics import f1_score, accuracy_score, roc_auc_score, roc_curve, precision_recall_curve
-from config import OUT_DIR
+
+#=======================================================================================================================
+# 🧩 Internal Imports
+#=======================================================================================================================
+
+from .config import OUT_DIR
+
+#=======================================================================================================================
+# ⚙️ Other Configuration
+#=======================================================================================================================
 
 warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 console = Console()
+
+#=======================================================================================================================
+# 🚀 Main Code
+#=======================================================================================================================
 
 class Trainer:
     def __init__(
@@ -149,13 +162,13 @@ class Trainer:
             auroc_per_class = [float("nan")] * all_labels.shape[1]
 
         # prepare data for wandb multilabel-compatible logging (flattened approach)
-        y_true_flat = []
-        y_pred_flat = []
-        for i in range(len(all_labels)):
-            for j in range(all_labels.shape[1]):
-                if all_labels[i][j] == 1:
-                    y_true_flat.append(j)
-                    y_pred_flat.append(all_probs[i])
+        # y_true_flat = []
+        # y_pred_flat = []
+        # for i in range(len(all_labels)):
+        #     for j in range(all_labels.shape[1]):
+        #         if all_labels[i][j] == 1:
+        #             y_true_flat.append(j)
+        #             y_pred_flat.append(all_probs[i])
 
 
         wandb.log({
@@ -166,8 +179,8 @@ class Trainer:
             "val_auroc_macro": auroc_macro,
             "val_auroc_effusion": auroc_per_class[0],
             "val_auroc_atelectasis": auroc_per_class[1],
-            "val_roc_curve": wandb.plot.roc_curve(y_true_flat, y_pred_flat),
-            "val_pr_curve": wandb.plot.pr_curve(y_true_flat, y_pred_flat),
+            # "val_roc_curve": wandb.plot.roc_curve(y_true_flat, y_pred_flat),
+            # "val_pr_curve": wandb.plot.pr_curve(y_true_flat, y_pred_flat),
         })
 
         return avg_loss, accuracy, f1, auroc_macro
