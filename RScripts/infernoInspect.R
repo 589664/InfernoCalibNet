@@ -9,7 +9,7 @@ library("inferno")
 relative_path <- "data/inferno"
 
 # Full file paths
-input_file     <- file.path(relative_path, "calibration_sampled.csv")
+input_file     <- file.path(relative_path, "calibration_test.csv")
 metadata_file  <- file.path(relative_path, "inferno_metadata.csv")
 inferno_dir    <- file.path(relative_path, "effusion")
 
@@ -64,7 +64,7 @@ result_probs <- Pr(
 # Visualize samples
 plot(
   result_probs,
-  variability = "samples",
+  variability = "quantiles",
   col = adjustcolor("#5195b0", alpha.f = 1),
   lwd = 1,
   grid = TRUE,
