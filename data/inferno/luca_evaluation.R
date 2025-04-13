@@ -64,7 +64,12 @@ probs <- Pr(Y = Y, X = X,
 outcomenames <- apply(Y, 1, function(x)paste0('E', x[1], '_A', x[2]))
 ## [1] "E0_A0" "E1_A0" "E0_A1" "E1_A1"
 ematrix <- diag(4)
-rownames(ematrix) <- colnames(ematrix) <- outcomenames
+## ## uncomment below to create a random u.matrix with entries between 0 and 1
+## ematrix <- matrix(rnorm(4*4), 4, 4)#diag(4)
+## ematrix <- ematrix - min(ematrix)
+## ematrix <- ematrix/max(ematrix)
+colnames(ematrix) <- outcomenames
+rownames(ematrix) <- outcomenames
 
 
 ## This is the list of expected utilities:
@@ -96,6 +101,7 @@ all(trueoutcomenames == outcomenames[truevalues])
 ## [1] TRUE
 
 avgyield <- mean(ematrix[cbind(decisions, truevalues)])
+avgyield
 ## 0.655243
 ## 65.5% accuracy
 
@@ -115,5 +121,6 @@ all(responsenames == outcomenames[decisionsNN])
 ## [1] TRUE
 
 avgyieldNN <- mean(ematrix[cbind(decisionsNN, truevalues)])
+avgyieldNN
 ## 0.645648
 ## 64.6% accuracy
