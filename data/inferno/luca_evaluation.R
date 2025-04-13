@@ -82,6 +82,14 @@ decisions <- apply(exputilities, 2, choosemax)
 ## translate true values to integer in 1:4
 truevalues <- apply(trueY, 1, function(x){(x[1] + 2 * x[2]) + 1})
 
+## Note that by predicting the most common condition all the time,
+## we could at most reach 46.7% accuracy:
+## > table(truevalues)/sum(table(truevalues))*100
+## truevalues
+##        1        2        3        4 
+## 46.74435 23.50925 22.61823  7.12817 
+
+
 ## test consistency
 trueoutcomenames <- apply(trueY, 1, function(x)paste0('E', x[1], '_A', x[2]))
 all(trueoutcomenames == outcomenames[truevalues])
