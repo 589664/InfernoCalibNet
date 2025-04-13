@@ -131,3 +131,11 @@ xrays
 atelectasis
 effusion
 etc
+# added by luca
+.directory
+Rplots.pdf
+*#
+.#*
+.Rhistory
+.RData
+.backups/
