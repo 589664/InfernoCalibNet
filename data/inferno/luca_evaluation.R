@@ -89,4 +89,23 @@ all(trueoutcomenames == outcomenames[truevalues])
 
 avgyield <- mean(ematrix[cbind(decisions, truevalues)])
 ## 0.655243
-## 66% accuracy
+## 65.5% accuracy
+
+
+## Now check answers from neural net instead
+## assume a simple "logit>=0" rule is applied
+
+responsesNN <- apply(
+    testdata[, c('LOGIT_EFFUSION', 'LOGIT_ATELECTASIS')],
+    1, function(x){1*(x>=0)})
+
+decisionsNN <- apply(responsesNN, 2, function(x){(x[1] + 2 * x[2]) + 1})
+
+## test consistency
+responsenames <- apply(responsesNN, 2, function(x)paste0('E', x[1], '_A', x[2]))
+all(responsenames == outcomenames[decisionsNN])
+## [1] TRUE
+
+avgyieldNN <- mean(ematrix[cbind(decisionsNN, truevalues)])
+## 0.645648
+## 64.6% accuracy
