@@ -1,74 +1,84 @@
-#=======================================================================================================================
+# ================================================================================================================
 # 📦 Load Libraries and Configuration
-#=======================================================================================================================
+# ================================================================================================================
 library("inferno")
 
-parallel <- 8
-learntdir <- "data/inferno/luca_inferno"
-metadata <- read.csv(file.path(learntdir, "metadata.csv"))
-testdata <- read.csv("data/inferno/calibration_test.csv")[, metadata$name]
+num_threads <- 8
+inferno_model_dir <- "../data/inferno/combined"
+metadata <- read.csv(file.path(inferno_model_dir, "metadata.csv"))
+test_data <- read.csv("../data/inferno/calibration_test.csv")
+test_data <- test_data[, metadata$name]
 
-#=======================================================================================================================
+# ================================================================================================================
 # 🔍 Define Predictors and Targets
-#=======================================================================================================================
-Ynames <- c("LABEL_EFFUSION", "LABEL_ATELECTASIS")
-Xnames <- setdiff(metadata$name, Ynames)
+# ================================================================================================================
+target_vars <- c("LABEL_EFFUSION", "LABEL_ATELECTASIS")
+predictor_vars <- setdiff(metadata$name, target_vars)
 
-Y <- setNames(expand.grid(0:1, 0:1), as.list(Ynames))
-trueY <- testdata[, Ynames, drop=FALSE]
-X <- testdata[, Xnames, drop=FALSE]
+y_grid <- setNames(expand.grid(0:1, 0:1), as.list(target_vars))
+y_true <- test_data[, target_vars, drop = FALSE]
+x_input <- test_data[, predictor_vars, drop = FALSE]
 
-#=======================================================================================================================
+# ================================================================================================================
 # 🔬 Run Inferno Inference
-#=======================================================================================================================
-probs <- Pr(
-  Y = Y,
-  X = X,
-  learnt = learntdir,
-  parallel = parallel,
+# ================================================================================================================
+probabilities <- Pr(
+  Y = y_grid,
+  X = x_input,
+  learnt = inferno_model_dir,
+  parallel = num_threads,
   quantiles = c(0.055, 0.945),
   nsamples = NULL
 )
 
-#=======================================================================================================================
-# 🔢 Build Utility Matrix and Outcome Labels
-#=======================================================================================================================
-outcomenames <- apply(Y, 1, function(x) paste0("E", x[1], "_A", x[2]))
-ematrix <- diag(4)
-colnames(ematrix) <- outcomenames
-rownames(ematrix) <- outcomenames
+# ================================================================================================================
+# 🧮 Build Utility Matrix and Label Names
+# ================================================================================================================
+outcome_labels <- apply(y_grid, 1, function(x) paste0("eff_", x[1], "_ate_", x[2]))
 
-#=======================================================================================================================
+utility_matrix <- matrix(
+  c(
+    1.00, 0.55, 0.60, 0.40,
+    0.90, 1.00, 0.65, 0.75,
+    0.90, 0.65, 1.00, 0.75,
+    0.80, 0.85, 0.85, 1.00
+  ),
+  nrow = 4,
+  byrow = TRUE
+)
+colnames(utility_matrix) <- outcome_labels
+rownames(utility_matrix) <- outcome_labels
+
+# ================================================================================================================
 # 🔄 Decision Making Based on Expected Utility
-#=======================================================================================================================
-exputilities <- ematrix %*% probs$values
-choosemax <- function(x) sample(rep(which(x == max(x)), 2), 1)
-decisions <- apply(exputilities, 2, choosemax)
-truevalues <- apply(trueY, 1, function(x) (x[1] + 2 * x[2]) + 1)
+# ================================================================================================================
+expected_utilities <- utility_matrix %*% probabilities$values
+select_max <- function(x) sample(rep(which(x == max(x)), 2), 1)
+decision_indices <- apply(expected_utilities, 2, select_max)
+true_indices <- apply(y_true, 1, function(x) (x[1] + 2 * x[2]) + 1)
+true_labels <- apply(y_true, 1, function(x) paste0("eff_", x[1], "_ate_", x[2]))
+stopifnot(all(true_labels == outcome_labels[true_indices]))
 
-trueoutcomenames <- apply(trueY, 1, function(x) paste0("E", x[1], "_A", x[2]))
-stopifnot(all(trueoutcomenames == outcomenames[truevalues]))
-
-#=======================================================================================================================
+# ================================================================================================================
 # 📊 Evaluate Inferno Accuracy
-#=======================================================================================================================
-avgyield <- mean(ematrix[cbind(decisions, truevalues)])
-print(avgyield)  # ~0.655
+# ================================================================================================================
+avg_yield <- mean(utility_matrix[cbind(decision_indices, true_indices)])
+print(avg_yield)
 
-#=======================================================================================================================
+# ================================================================================================================
 # 🤖 Baseline Rule Using Raw Logits (Approximate NN Output)
-#=======================================================================================================================
-responsesNN <- apply(
-  testdata[, c("LOGIT_EFFUSION", "LOGIT_ATELECTASIS")],
+# ================================================================================================================
+baseline_responses <- apply(
+  test_data[, c("LOGIT_EFFUSION", "LOGIT_ATELECTASIS")],
   1,
   function(x) as.integer(x >= 0)
 )
-decisionsNN <- apply(responsesNN, 2, function(x) (x[1] + 2 * x[2]) + 1)
-responsenames <- apply(responsesNN, 2, function(x) paste0("E", x[1], "_A", x[2]))
-stopifnot(all(responsenames == outcomenames[decisionsNN]))
+baseline_decisions <- apply(baseline_responses, 2, function(x) (x[1] + 2 * x[2]) + 1)
+baseline_labels <- apply(baseline_responses, 2, function(x) paste0("eff_", x[1], "_ate_", x[2]))
+stopifnot(all(baseline_labels == outcome_labels[baseline_decisions]))
 
-#=======================================================================================================================
+# ================================================================================================================
 # 📊 Evaluate Baseline Accuracy
-#=======================================================================================================================
-avgyieldNN <- mean(ematrix[cbind(decisionsNN, truevalues)])
-print(avgyieldNN)  # ~0.646
+# ================================================================================================================
+avg_yield_baseline <- mean(utility_matrix[cbind(baseline_decisions, true_indices)])
+print(avg_yield_baseline)
