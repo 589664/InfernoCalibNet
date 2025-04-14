@@ -5,12 +5,12 @@ library(inferno)
 parallel <- 8
 
 ## Name of directory where 'learnt' has been saved
-learntdir <- 'luca_output_5-250412T221231-vrt7_dat1500_smp3600'
+learntdir <- 'data/inferno/luca_inferno'
 
 metadata <- read.csv(file.path(learntdir, 'metadata.csv'))
 
 ## Load test data
-testdata <- read.csv('calibration_test.csv')[, metadata$name]
+testdata <- read.csv('data/inferno/calibration_test.csv')[, metadata$name]
 
 
 #### Example calculation
@@ -91,8 +91,8 @@ truevalues <- apply(trueY, 1, function(x){(x[1] + 2 * x[2]) + 1})
 ## we could at most reach 46.7% accuracy:
 ## > table(truevalues)/sum(table(truevalues))*100
 ## truevalues
-##        1        2        3        4 
-## 46.74435 23.50925 22.61823  7.12817 
+##        1        2        3        4
+## 46.74435 23.50925 22.61823  7.12817
 
 
 ## test consistency
