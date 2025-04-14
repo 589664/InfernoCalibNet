@@ -48,3 +48,10 @@ This guide explains how to run a Python script in your Linux Virtual Machine (VM
    ```bash
    Rscript --no-init-file RScripts/infernoRunTrain.R |& tee data/inferno/outputlog.out
    ```
+
+
+
+## Git commit reset but keep all the changes
+```bash
+git reset HEAD~1
+```

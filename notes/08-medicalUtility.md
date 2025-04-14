@@ -1,0 +1,107 @@
+## Utility Matrix Development Notes: Atelectasis and Effusion
+
+### 🩻 Clinical Definitions
+- **Pleural Effusion** 🫗: A buildup of fluid in the space between the lungs and the chest wall. It often appears as a dense white area on chest X-rays and can be caused by heart failure, cancer, or infections.
+- **Atelectasis** 🌬️: The partial or complete collapse of a part of the lung, leading to reduced air content. It shows up on X-rays as denser regions and can shift other parts of the chest, such as the heart or nearby ribs.
+
+### 🔄 Radiographic Overlap and Co-Occurrence
+- Both conditions often appear in the same areas of the lungs, especially in the lower parts.
+- A large effusion can compress the lung and cause atelectasis. This is known as compressive atelectasis.
+- On X-rays, they can both look like white, dense regions, which makes it difficult to tell them apart.
+- Differentiating between them is easier when using multiple imaging views or techniques like CT or ultrasound.
+
+### Related Clinical Context for Pleural Effusion 🫗
+- Pleural effusion caused by lung cancer is common in late-stage cases. About 15–25% of cases have cancer as the cause. Studies in this area include QALY data that can guide utility values.
+- Heart failure is a major non-cancer cause. Utility values from heart failure studies can be adapted for non-malignant effusions.
+- Infections like pneumonia can lead to effusions that may develop into more serious conditions like empyema. These cases are included in utility loss studies.
+- If untreated, large effusions may cause acute breathing problems (ARF). Data from ARF-related cost and utility studies can be used to define lower utility values.
+
+### Related Clinical Context for Atelectasis 🌬️
+- Atelectasis is common after surgery and can cause oxygen issues. Post-surgery recovery data can be used to estimate utility.
+- Patients with COPD are at higher risk for partial lung collapse. Utility values from COPD research are relevant here.
+- Collapsed lung areas can become infected and lead to pneumonia. This connection allows use of pneumonia-related QALY and DALY data.
+- ICU patients or those on ventilators often experience temporary lung collapse. These cases are reflected in critical care utility data.
+
+## Utility Matrix Construction and Literature Mapping
+
+### Purpose
+This document outlines how the utility values used in a 4×4 matrix for pleural effusion and atelectasis predictions were selected, and which findings from literature support each score. It also includes simplified definitions of medical and health economic terms used in the matrix.
+
+---
+
+### Matrix Structure and Logic
+Each cell in the utility matrix represents a combination of a predicted and a true condition. Utility scores range from 0 (death or maximal burden) to 1 (perfect health). Correct predictions receive the highest utility. Incorrect predictions are assigned utility scores based on the severity of misclassification, derived from QALY and DALY literature, clinical impact studies, and cost-effectiveness analyses.
+
+---
+
+### Terminology
+- **TPC (Tunneled Pleural Catheter)** 🧴: A medical device used for chronic pleural effusion drainage, often in outpatient care.
+- **EQ-5D** 📋: A standardized questionnaire measuring five dimensions of health (mobility, self-care, usual activities, pain/discomfort, anxiety/depression). Converts responses to utility scores between 0 and 1.
+- **SG (Standard Gamble)** 🎲: A method where individuals express preference by choosing between certain health states and probabilistic outcomes.
+- **TTO (Time Trade-Off)** ⏳: A utility elicitation technique where patients indicate how much life time they would trade for better health.
+- **QALY (Quality-Adjusted Life Year)** 📈: A health outcome metric combining quantity and quality of life.
+- **DALY (Disability-Adjusted Life Year)** 📉: A public health metric estimating total burden by combining premature death and time lived with disability.
+
+---
+
+### 🧮 Updated Utility Matrix (Predicted vs. Actual)
+
+| **Prediction \ Ground Truth** | **E0_A0** 🟢 *(No Disease)* | **E1_A0** 🫗 *(Effusion)*       | **E0_A1** 🌬️ *(Atelectasis)*     | **E1_A1** 🫗🌬️ *(Both)*           |
+|-------------------------------|-----------------------------|--------------------------------|----------------------------------|-------------------------------|
+| **E0_A0 (None predicted)**    | 1.00 ✅<br>Correct none     | 0.55 ❌<br>Missed effusion      | 0.60 ❌<br>Missed atelectasis      | 0.40 ❌❌<br>Missed both        |
+| **E1_A0 (Only effusion)**     | 0.90 ⚠️<br>False + effusion | 1.00 ✅<br>Correct effusion     | 0.65 ❌<br>Missed atelectasis      | 0.75 ❌<br>Partial detection    |
+| **E0_A1 (Only atelectasis)**  | 0.90 ⚠️<br>False + atelectasis | 0.65 ❌<br>Missed effusion      | 1.00 ✅<br>Correct atelectasis    | 0.75 ❌<br>Partial detection    |
+| **E1_A1 (Both predicted)**    | 0.80 ⚠️<br>Overdiagnosis   | 0.85 ⚠️<br>False + effusion     | 0.85 ⚠️<br>False + atelectasis     | 1.00 ✅<br>Correct both         |
+
+---
+
+### Findings from Reviewed Literature
+
+#### 1. **Management of Malignant Pleural Effusion**
+- Page 217–218: Table 1 and text explain utility values for different management strategies of MPE.
+- Utility for unresolved malignant effusion: **0.473**
+- Utility for resolved effusion (e.g., after pleurodesis): **0.599**
+- Utility for tunneled pleural catheter: **0.580**
+- These estimates are based on EQ-5D and Standard Gamble, using NSCLC (lung cancer) as reference.
+- These utilities informed values for both correct effusion detection and penalties for missing it.
+
+#### 2. **Utility Scores in Patients With Oxygen-Dependent COPD**
+- Page 515, Table 5: Reports utility scores from EQ-5D in oxygen-dependent COPD patients.
+- Mean utility: **~0.61**
+- Used to estimate penalty for undetected atelectasis and adjusted partial prediction penalties.
+
+#### 3. **Use of QALYs in Lung Cancer Cost-Effectiveness**
+- Sections 3–5 and Table 2: Discuss disutility from overdiagnosis, false positives, and stage-based utility modeling.
+- Reported disutility from anxiety/follow-up scans: **0.04–0.05**
+- Justifies assigning **0.85–0.90** utility for false positives.
+- Also used to validate assumptions for correct but not severe cases.
+
+#### 4. **Understanding Summary Measures Used to Estimate the Burden of Disease**
+- Pages 2–4: Detailed definitions and calculation methods for QALYs and DALYs.
+- DALY = YLL + YLD, with disability weights (0–1).
+- Supports rationale for lowest penalties (e.g., 0.40) for missed both conditions due to potential life years lost.
+
+#### 5. **Applying Utility Values in Cost-Effectiveness Analyses of Lung Cancer**
+- Sections 4–5 and Figures 1–2: Utility values vary based on cancer stage and symptom management.
+- Stage I lung cancer utility: **~0.71**
+- Informs moderate penalty zones for partial detection or misclassification.
+
+---
+
+### Summary Table of Value Assignments
+
+| **Scenario**                    | **Assigned Utility** | **Justified By**                                            |
+|--------------------------------|----------------------|--------------------------------------------------------------|
+| Correct prediction             | 1.00                 | All sources (EQ-5D/SF-6D consensus)
+| False positive (effusion only) | 0.90                 | Source 3 & 5 (disutility from unnecessary scans)
+| False positive (atelectasis)   | 0.90                 | Source 3 & 5
+| Missed effusion                | 0.55                 | Source 1 (unresolved MPE)
+| Missed atelectasis             | 0.60                 | Source 2 (oxygen-dependent COPD)
+| Missed both conditions         | 0.40                 | Source 4 (DALY-based severe burden)
+| Partial correct (1 of 2 found) | 0.65–0.75            | Sources 1 & 2 (moderate severity or overlap)
+| Overprediction (both predicted wrongly) | 0.80         | Source 3 (stacked disutility from multiple false positives)
+
+---
+
+### Application
+This utility matrix is used in model evaluation to replace standard accuracy with a health-impact-aware scoring system. Scores are clinically grounded and supported by published patient-centered metrics and methodologies.
