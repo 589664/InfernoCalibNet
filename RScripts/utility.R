@@ -2,11 +2,14 @@
 # 📦 Load Libraries and Configuration
 # ================================================================================================================
 library("inferno")
+library("jsonlite")
 
-num_threads <- 8
-inferno_model_dir <- "../data/inferno/combined"
+num_threads <- 10
+inferno_model_dir <- "data/inferno/combined"
+conf_output_path <- "data/inferno/inferno_CM.json"
+
 metadata <- read.csv(file.path(inferno_model_dir, "metadata.csv"))
-test_data <- read.csv("../data/inferno/calibration_test.csv")
+test_data <- read.csv("data/inferno/calibration_test.csv")
 test_data <- test_data[, metadata$name]
 
 # ================================================================================================================
@@ -32,7 +35,7 @@ probabilities <- Pr(
 )
 
 # ================================================================================================================
-# 🧮 Build Utility Matrix and Label Names
+# 🔬 Build Utility Matrix and Label Names
 # ================================================================================================================
 outcome_labels <- apply(y_grid, 1, function(x) paste0("eff_", x[1], "_ate_", x[2]))
 
@@ -63,22 +66,28 @@ stopifnot(all(true_labels == outcome_labels[true_indices]))
 # 📊 Evaluate Inferno Accuracy
 # ================================================================================================================
 avg_yield <- mean(utility_matrix[cbind(decision_indices, true_indices)])
-print(avg_yield)
+cat("🔍 Average Expected Utility from Inferno Decisions:", round(avg_yield, 6), "\n")
 
 # ================================================================================================================
-# 🤖 Baseline Rule Using Raw Logits (Approximate NN Output)
+# 📉 Save Confusion Matrices to JSON for Python Plotting (Inferno-Based)
 # ================================================================================================================
-baseline_responses <- apply(
-  test_data[, c("LOGIT_EFFUSION", "LOGIT_ATELECTASIS")],
-  1,
-  function(x) as.integer(x >= 0)
+conf_matrix_json <- function(true_vals, pred_vals) {
+  mat <- table(True = true_vals, Pred = pred_vals)
+  as.data.frame.matrix(mat)
+}
+
+# Reconstruct Inferno decisions into binary label predictions
+y_pred_eff <- (decision_indices - 1) %% 2
+y_pred_ate <- (decision_indices - 1) %/% 2
+
+conf_eff <- conf_matrix_json(y_true$LABEL_EFFUSION, y_pred_eff)
+conf_ate <- conf_matrix_json(y_true$LABEL_ATELECTASIS, y_pred_ate)
+
+write_json(
+  list(
+    effusion = conf_eff,
+    atelectasis = conf_ate
+  ),
+  conf_output_path,
+  pretty = TRUE
 )
-baseline_decisions <- apply(baseline_responses, 2, function(x) (x[1] + 2 * x[2]) + 1)
-baseline_labels <- apply(baseline_responses, 2, function(x) paste0("eff_", x[1], "_ate_", x[2]))
-stopifnot(all(baseline_labels == outcome_labels[baseline_decisions]))
-
-# ================================================================================================================
-# 📊 Evaluate Baseline Accuracy
-# ================================================================================================================
-avg_yield_baseline <- mean(utility_matrix[cbind(baseline_decisions, true_indices)])
-print(avg_yield_baseline)
