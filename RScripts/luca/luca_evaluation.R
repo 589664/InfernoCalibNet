@@ -124,3 +124,26 @@ avgyieldNN <- mean(ematrix[cbind(decisionsNN, truevalues)])
 avgyieldNN
 ## 0.645648
 ## 64.6% accuracy
+
+
+#### "Calibration curves":
+## compare value of sigmoid output with corresponding probability
+## this is just an average, since the other variates are omitted
+
+## Effusion
+outNN <- data.frame(LOGIT_EFFUSION = seq(-5, 5, length.out=129))
+probNN <- Pr(Y=data.frame(LABEL_EFFUSION = 1), X = outNN,
+    learnt = learntdir, parallel = parallel,
+    quantiles = c(0.055, 0.945), nsamples = NULL)
+
+plot(probNN, xlab = 'logit', ylab = 'probability', ylim = 0:1, legend = FALSE)
+flexiplot(x = outNN, y = plogis(outNN[,1]), lty = 2, col = 2, lwd = 3, add = TRUE)
+
+## Atelectasis
+outNN <- data.frame(LOGIT_ATELECTASIS = seq(-5, 5, length.out=129))
+probNN <- Pr(Y=data.frame(LABEL_ATELECTASIS = 1), X = outNN,
+    learnt = learntdir, parallel = parallel,
+    quantiles = c(0.055, 0.945), nsamples = NULL)
+
+plot(probNN, xlab = 'logit', ylab = 'probability', ylim = 0:1, legend = FALSE)
+flexiplot(x = outNN, y = plogis(outNN[,1]), lty = 2, col = 2, lwd = 3, add = TRUE)
