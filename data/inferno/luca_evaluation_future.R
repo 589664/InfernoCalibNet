@@ -136,6 +136,14 @@ probNN <- Pr(Y=data.frame(LABEL_EFFUSION = 1), X = outNN,
     learnt = learntdir, parallel = parallel,
     quantiles = c(0.055, 0.945), nsamples = NULL)
 
+mypdf('calibration_effusion', asp = 1)
+flexiplot(x = plogis(outNN[,1]), y = c(probNN$values),
+    xlab = 'NN sigmoid output', ylab = 'probability', ylim = 0:1, xlim = 0:1,
+    lwd = 3, main = 'effusion')
+plotquantiles(x = plogis(outNN[,1]), y = probNN$quantiles[1,,], add = TRUE)
+flexiplot(x = 0:1, y=0:1, lty = 2, lwd = 2, col = 5, add = TRUE)
+dev.off()
+
 plot(probNN, xlab = 'logit', ylab = 'probability', ylim = 0:1, legend = FALSE)
 flexiplot(x = outNN, y = plogis(outNN[,1]), lty = 2, col = 2, lwd = 3, add = TRUE)
 
@@ -145,5 +153,10 @@ probNN <- Pr(Y=data.frame(LABEL_ATELECTASIS = 1), X = outNN,
     learnt = learntdir, parallel = parallel,
     quantiles = c(0.055, 0.945), nsamples = NULL)
 
-plot(probNN, xlab = 'logit', ylab = 'probability', ylim = 0:1, legend = FALSE)
-flexiplot(x = outNN, y = plogis(outNN[,1]), lty = 2, col = 2, lwd = 3, add = TRUE)
+mypdf('calibration_atelectasis', asp = 1)
+flexiplot(x = plogis(outNN[,1]), y = c(probNN$values),
+    xlab = 'NN sigmoid output', ylab = 'probability', ylim = 0:1, xlim = 0:1,
+    lwd = 3, main = 'atelectasis')
+plotquantiles(x = plogis(outNN[,1]), y = probNN$quantiles[1,,], add = TRUE)
+flexiplot(x = 0:1, y=0:1, lty = 2, lwd = 2, col = 5, add = TRUE)
+dev.off()
