@@ -142,57 +142,55 @@ print(paste("NN expected utility (accuracy, threshold 0.27):",
 # 📈 Calibration Curves
 # ======================================================================================================================
 
-#--- Effusion Calibration ---#
-outNN <- data.frame(LOGIT_EFFUSION = seq(-5, 5, length.out = 129))
-probNN <- Pr(
-    Y = data.frame(LABEL_EFFUSION = 1),
-    X = outNN,
-    learnt = learntdir,
-    parallel = parallel,
-    quantiles = c(0.055, 0.945),
-    nsamples = NULL
-)
+# ----------------------------------------------------------------------------------------------------------------------
+# 📈 Calibration Curves for Neural Net Outputs vs Inferred Probabilities (Side-by-Side Improved Layout)
+# ----------------------------------------------------------------------------------------------------------------------
 
-flexiplot(
+# Helper function to plot calibration curves side-by-side for one label
+plot_calibration <- function(outNN, probNN, label_main) {
+  par(mfrow = c(1, 2), mar = c(5, 5, 4, 2), pty = "s", cex.axis = 1.5, cex.lab = 1.7, cex.main = 2, lwd = 2)
+
+  # Sigmoid output vs inferred probability
+  flexiplot(
     x = plogis(outNN[, 1]),
     y = c(probNN$values),
-    xlab = "NN sigmoid output", ylab = "probability",
-    ylim = 0:1, xlim = 0:1, lwd = 3, main = "effusion"
+    xlab = "NN sigmoid output", ylab = "Inferred probability",
+    ylim = 0:1, xlim = 0:1, lwd = 4, main = paste("Calibration:", label_main)
+  )
+  plotquantiles(x = plogis(outNN[, 1]), y = probNN$quantiles[1, , ], add = TRUE)
+  flexiplot(x = 0:1, y = 0:1, lty = 2, lwd = 2, col = 5, add = TRUE)
+  polygon(x = c(0.27, 1, 1, 0.27), y = c(0, 0, 1, 1), col = adjustcolor("#0f606b", alpha.f = 0.15), border = NA)
+  abline(v = 0.27, col = "#007c6c", lty = 3, lwd = 2)
+
+  # Logit vs inferred probability
+  plot(probNN, xlab = "Logit", ylab = "Inferred probability", ylim = 0:1, legend = FALSE, main = paste(label_main, "Logit View"))
+  flexiplot(x = outNN, y = plogis(outNN[, 1]), lty = 2, col = 2, lwd = 4, add = TRUE)
+  polygon(x = c(qlogis(0.27), 5, 5, qlogis(0.27)), y = c(0, 0, 1, 1), col = adjustcolor("darkgreen", alpha.f = 0.15), border = NA)
+  abline(v = qlogis(0.27), col = "darkgreen", lty = 3, lwd = 2)
+
+  par(mfrow = c(1, 1))
+}
+
+# Effusion Calibration
+outNN_effusion <- data.frame(LOGIT_EFFUSION = seq(-5, 5, length.out = 129))
+probNN_effusion <- Pr(
+  Y = data.frame(LABEL_EFFUSION = 1),
+  X = outNN_effusion,
+  learnt = learntdir,
+  parallel = parallel,
+  quantiles = c(0.055, 0.945),
+  nsamples = NULL
 )
-plotquantiles(x = plogis(outNN[, 1]), y = probNN$quantiles[1, , ], add = TRUE)
-flexiplot(x = 0:1, y = 0:1, lty = 2, lwd = 2, col = 5, add = TRUE)
-dev.off()
+plot_calibration(outNN_effusion, probNN_effusion, "Effusion")
 
-plot(probNN, xlab = "logit", ylab = "probability", ylim = 0:1, legend = FALSE)
-flexiplot(x = outNN, y = plogis(outNN[, 1]), lty = 2, col = 2, lwd = 3, add = TRUE)
-
-
-#--- Atelectasis Calibration ---#
-outNN <- data.frame(LOGIT_ATELECTASIS = seq(-5, 5, length.out = 129))
-probNN <- Pr(
-    Y = data.frame(LABEL_ATELECTASIS = 1),
-    X = outNN,
-    learnt = learntdir,
-    parallel = parallel,
-    quantiles = c(0.055, 0.945),
-    nsamples = NULL
+# Atelectasis Calibration
+outNN_atelectasis <- data.frame(LOGIT_ATELECTASIS = seq(-5, 5, length.out = 129))
+probNN_atelectasis <- Pr(
+  Y = data.frame(LABEL_ATELECTASIS = 1),
+  X = outNN_atelectasis,
+  learnt = learntdir,
+  parallel = parallel,
+  quantiles = c(0.055, 0.945),
+  nsamples = NULL
 )
-
-flexiplot(
-    x = plogis(outNN[, 1]),
-    y = c(probNN$values),
-    xlab = "NN sigmoid output", ylab = "probability",
-    ylim = 0:1, xlim = 0:1, lwd = 3, main = "atelectasis"
-)
-plotquantiles(x = plogis(outNN[, 1]), y = probNN$quantiles[1, , ], add = TRUE)
-flexiplot(x = 0:1, y = 0:1, lty = 2, lwd = 2, col = 5, add = TRUE)
-
-polygon(x = c(0.27, 1, 1, 0.27), y = c(0, 0, 1, 1), col = adjustcolor("#0f606b", alpha.f = 0.15), border = NA)
-abline(v = 0.27, col = "#007c6c", lty = 3, lwd = 2)
-dev.off()
-
-logit_thresh <- qlogis(0.27)
-plot(probNN, xlab = "logit", ylab = "probability", ylim = 0:1, legend = FALSE)
-flexiplot(x = outNN, y = plogis(outNN[, 1]), lty = 2, col = 2, lwd = 3, add = TRUE)
-polygon(x = c(logit_thresh, 5, 5, logit_thresh), y = c(0, 0, 1, 1), col = adjustcolor("darkgreen", alpha.f = 0.15), border = NA)
-abline(v = logit_thresh, col = "darkgreen", lty = 3, lwd = 2)
+plot_calibration(outNN_atelectasis, probNN_atelectasis, "Atelectasis")
