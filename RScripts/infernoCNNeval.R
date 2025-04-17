@@ -221,7 +221,7 @@ cat("==========================================================\n")
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Define root directory and saving directory
-save_dir <- file.path(rootdir, "plots")
+save_dir <- file.path("data", "plots")
 
 # Helper function to plot calibration curves for one label and save as SVG
 plot_calibration <- function(outNN, probNN, label_main, file_prefix = NULL) {
