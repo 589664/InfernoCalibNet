@@ -12,12 +12,12 @@ config_path <- args[1]
 config <- fromJSON(config_path)
 
 # Extract values from config
-relative_path <- dirname(config$input_csv)
-input_file    <- config$input_csv
+relative_path <- dirname(config$model_path)
 model_path    <- config$model_path
-row_index     <- config$row_index
 quantiles     <- config$quantiles
 input_values  <- config$input_values
+predictors    <- config$predictors
+predictands   <- config$predictands
 
 #=======================================================================================================================
 # 📁 Load Model
@@ -25,60 +25,39 @@ input_values  <- config$input_values
 inferno_model <- readRDS(model_path)
 
 #=======================================================================================================================
-# 📊 Load Data and Select Row
+# 🔍 Prepare Predictors and Predictands for Prediction
 #=======================================================================================================================
-alldata <- read.csv(
-  input_file,
-  na.strings = "",
-  stringsAsFactors = FALSE,
-  tryLogical = FALSE
-)
-row_data <- alldata[row_index, ]
-print(row_data)
+predictor_frame <- as.data.frame(input_values[predictors])
+predictand_frame <- as.data.frame(expand.grid(input_values[predictands]))
 
-#=======================================================================================================================
-# 🔍 Prepare Input and Predict
-#=======================================================================================================================
-input_features <- as.data.frame(input_values)
-target_frame <- data.frame(LABEL_EFFUSION = 0:1)
+print("🔍 Predictor Features:")
+print(predictor_frame)
+
+print("🔍 Predictand Targets:")
+print(predictand_frame)
 
 result_probs <- Pr(
-  Y = target_frame,
-  X = input_features,
+  Y = predictand_frame,
+  X = predictor_frame,
   learnt = inferno_model,
-  parallel = 7,
+  parallel = 10,
   quantile = quantiles
 )
 
 #=======================================================================================================================
-# 🗒️ Save Result to JSON (Including True Label)
+# 📅 Save Result to JSON
 #=======================================================================================================================
 output_path <- file.path(relative_path, "result_probs.json")
+
 export_data <- list(
   values     = result_probs$values,
   samples    = result_probs$samples,
   quantiles  = result_probs$quantiles,
   Y          = result_probs$Y,
   X          = result_probs$X,
-  lowertail  = result_probs$lowertail,
-  true_label = row_data$LABEL_EFFUSION
+  lowertail  = result_probs$lowertail
 )
 write(
   toJSON(export_data, pretty = TRUE, auto_unbox = TRUE),
   file = output_path
 )
-
-#=======================================================================================================================
-# 📈 Plot Prediction
-#=======================================================================================================================
-# plot(
-#   result_probs,
-#   variability = "samples",
-#   col = adjustcolor("#5195b0", alpha.f = 1),
-#   lwd = 1,
-#   grid = TRUE,
-#   legend = TRUE,
-#   xlab = "Effusion label",
-#   ylab = "Posterior probability"
-# )
-# abline(v = row_data[, "LABEL_EFFUSION"], lty = 2, lwd = 2, col = 2)
