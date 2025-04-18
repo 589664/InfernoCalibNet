@@ -18,7 +18,7 @@
 - [📊 Overview](#-overview)
 - [📂 Repository Structure](#-repository-structure)
 - [🔧 Installation](#-installation)
-- [👣‍♂️ Quick Start](#-quick-start)
+- [👣 Quick Start](#-quick-start)
 - [🔄 Usage Examples](#-usage-examples)
 - [📄 Documentation](#-documentation)
 - [🌟 Acknowledgements](#-acknowledgements)
@@ -34,7 +34,7 @@
 ## 🔧 Installation
 
 
-## 👣‍♂️ Quick Start
+## 👣 Quick Start
 
 > **Note:** The Inferno R-package provides Bayesian nonparametric calibration for CNN outputs.
 
@@ -64,4 +64,4 @@ git submodule update --init --recursive
 
 ## 🌟 Acknowledgements
 
-*Maintained with passion by [@589664](https://github.com/589664)* 🚀
+*Maintained with love & passion by [@m4siko](https://github.com/m4siko)* 🚀
