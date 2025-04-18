@@ -174,7 +174,7 @@ def run_inferno_prediction(
         "predictands": predictands
     }
 
-    console.rule("[bold yellow]🚀 Params for Inferno")
+    console.rule("[bold yellow]🚀Params for Inferno")
     print(config)
 
     #====================================================================

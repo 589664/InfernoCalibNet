@@ -1,4 +1,10 @@
-# InfernoCalibNet
+<h1 align="center">
+  🧠InfernoCalibNet🔥
+</h1>
+
+<p align="center">
+  <img src="assets/banner.png" alt="InfernoCalibNet Banner" style="width:100%; margin:auto;">
+</p>
 
 > **Calibration modeling for CNN outputs using Bayesian nonparametric inference**
 
@@ -12,7 +18,7 @@
 - [📊 Overview](#-overview)
 - [📂 Repository Structure](#-repository-structure)
 - [🔧 Installation](#-installation)
-- [🚶‍♂️ Quick Start](#-quick-start)
+- [👣‍♂️ Quick Start](#-quick-start)
 - [🔄 Usage Examples](#-usage-examples)
 - [📄 Documentation](#-documentation)
 - [🌟 Acknowledgements](#-acknowledgements)
@@ -28,7 +34,7 @@
 ## 🔧 Installation
 
 
-## 🚶‍♂️ Quick Start
+## 👣‍♂️ Quick Start
 
 > **Note:** The Inferno R-package provides Bayesian nonparametric calibration for CNN outputs.
 
