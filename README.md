@@ -8,7 +8,7 @@
 
 > **Calibration modeling for CNN outputs using Bayesian nonparametric inference**
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.md)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-ff69b4.svg)](CODE_OF_CONDUCT.md)
 
 ---
