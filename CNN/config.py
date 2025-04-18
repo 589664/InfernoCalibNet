@@ -9,8 +9,8 @@ from pathlib import Path
 # 📊 Normalization Constants
 #=======================================================================================================================
 
-MEAN = 0.50509
-STD = 0.24930
+MEAN    = 0.49765
+STD     = 0.22854
 
 #=======================================================================================================================
 # 📂 Directory Paths
@@ -18,8 +18,6 @@ STD = 0.24930
 
 ROOT_DIR = Path(__file__).parent.parent
 
-# OUT_DIR = ROOT_DIR / "data" / "refined" / "binary"
-# OUT_DIR = ROOT_DIR / "data" / "refined" / "multiclass"
 XRAY_DIR = ROOT_DIR / "data" / "raw" / "xrays"
 CSV_PATH = ROOT_DIR / "data" / "raw" / "xraysAUX.csv"
 OUT_DIR = ROOT_DIR / "data" / "CNNprepared"

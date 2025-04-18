@@ -1,18 +1,31 @@
 import torch.nn as nn
-from torchvision.models import resnet34, ResNet34_Weights
+
+from torchvision.models import resnet34, resnet50
+from torchvision.models import ResNet34_Weights, ResNet50_Weights
+
 
 #=======================================================================================================================
 # 🚀 Main Code
 #=======================================================================================================================
 
 class InfernoCalibNet(nn.Module):
-    def __init__(self, num_classes=2, drop_rate=0.6):
+    def __init__(self, num_classes=2, drop_rate=0.6, model_type='resnet34', pretrained=True):
         super(InfernoCalibNet, self).__init__()
 
-        # base_model = resnet34()
-        base_model = resnet34(weights=ResNet34_Weights.IMAGENET1K_V1)
+        if model_type == 'resnet34':
+            if pretrained:
+                base = resnet34(weights=ResNet34_Weights.IMAGENET1K_V1)
+            else:
+                base = resnet34(weights=None)
+        elif model_type == 'resnet50':
+            if pretrained:
+                base = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
+            else:
+                base = resnet50(weights=None)
+        else:
+            raise ValueError('model_type must be "resnet34" or "resnet50"')
 
-        base_model.conv1 = nn.Conv2d(
+        base.conv1 = nn.Conv2d(
             in_channels=1,
             out_channels=64,
             kernel_size=3,
@@ -21,9 +34,10 @@ class InfernoCalibNet(nn.Module):
             bias=False,
         )
 
-        self.base_model = nn.Sequential(*list(base_model.children())[:-2])
+        self.base_model = nn.Sequential(*list(base.children())[:-2])
 
-        num_feat = base_model.fc.in_features
+        num_feat = base.fc.in_features
+
         self.classifier = nn.Sequential(
             nn.Conv2d(num_feat, 128, kernel_size=1),
             nn.BatchNorm2d(128),
@@ -33,20 +47,6 @@ class InfernoCalibNet(nn.Module):
             nn.Dropout(drop_rate),
             nn.Linear(128, num_classes),
         )
-
-        # self.classifier = nn.Sequential(
-        #     nn.Conv2d(num_feat, 512, kernel_size=1),
-        #     nn.BatchNorm2d(512),
-        #     nn.ReLU(),
-        #     nn.Dropout(drop_rate),
-        #     nn.Conv2d(512, 128, kernel_size=3, padding=1),
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-        #     nn.Dropout(drop_rate),
-        #     nn.AdaptiveAvgPool2d((1, 1)),
-        #     nn.Flatten(),
-        #     nn.Linear(128, num_classes),
-        # )
 
     def forward(self, x):
         x = self.base_model(x)

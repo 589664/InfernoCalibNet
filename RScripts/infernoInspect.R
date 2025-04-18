@@ -44,10 +44,20 @@ random_row <- alldata[sample(1:total_rows, 1), ]
 print(random_row)
 
 # Target prediction values
-target_frame <- data.frame(LABEL_EFFUSION = 0:1)
+# target_frame <- data.frame(AGE = (50:70), VP = c("PA", "AP"))
+
+target_frame <- expand.grid(
+  LOGIT_EFFUSION = 0:1,
+  VP = c("PA", "AP")
+)
+
+# target_frame <- expand.grid(
+#   AGE = c(51, 72),
+#   VP = c("PA", "AP")
+# )
 
 # Input features for that row
-input_features <- random_row[, c("LOGIT_EFFUSION", "AGE", "GENDER", "VP")]
+input_features <- random_row[, c("AGE", "LABEL_EFFUSION", "GENDER")]
 
 # Quantiles for uncertainty interval
 uncertainty_bounds <- c(0.055, 0.25, 0.75, 0.945)

@@ -55,3 +55,11 @@ This guide explains how to run a Python script in your Linux Virtual Machine (VM
 ```bash
 git reset HEAD~1
 ```
+
+## List project tree structure:
+
+Navigate to projects root and run following (tree for linux has to be installed)
+
+```bash
+tree -d -L 2 -I '__pycache__|.git'
+```
