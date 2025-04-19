@@ -128,8 +128,6 @@ wandb
 *.pth
 tensorflow
 xrays
-atelectasis
-effusion
 etc
 # added by luca
 .directory
