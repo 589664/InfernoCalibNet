@@ -36,7 +36,7 @@
 
 ## 👣 Quick Start
 
-> **Note:** The Inferno R-package provides Bayesian nonparametric calibration for CNN outputs.
+> **Note:** The Inferno R-package provides Bayesian nonparametric calibration software package for CNN outputs.
 
 ### Clone the repository without submodules
 
