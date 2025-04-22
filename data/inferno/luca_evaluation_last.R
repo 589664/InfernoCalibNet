@@ -73,12 +73,12 @@ dev.off()
 probs1 <- Pr(Y = data.frame(LABEL_EFFUSION = 1, AGE = 0:99),
     X = data.frame(LOGIT_EFFUSION = seq(-5, 5, length.out=129)),
     learnt = learntdir, parallel = parallel,
-    quantiles = NULL, nsamples = 2)
+    quantiles = NULL, nsamples = NULL)
 ##
 probs2 <- Pr(Y = data.frame(AGE = 0:99),
     X = data.frame(LOGIT_EFFUSION = seq(-5, 5, length.out=129)),
     learnt = learntdir, parallel = parallel,
-    quantiles = NULL, nsamples = 2)
+    quantiles = NULL, nsamples = NULL)
 
 ## sum according to age groups and calculate conditionals
 condprobs <- sapply(seq(0, 80, by = 20),
