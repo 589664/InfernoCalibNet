@@ -1,6 +1,13 @@
 #### Evaluation of neuralnet+Inferno inferences
 library(inferno)
 
+## utility function for pdf
+pdf2 <- function(file, ...){
+    pdf(file = paste0(sub('.pdf$', '', file), '.pdf'),
+        paper = 'special', height=148/25.4*1.5, width=210/25.4*1.5, ...)
+}
+
+
 ## How many parallel cores for the calculations
 parallel <- 8
 
@@ -13,7 +20,34 @@ metadata <- read.csv(file.path(learntdir, 'metadata.csv'))
 testdata <- read.csv('calibration_test.csv')[, metadata$name]
 
 
-#### Example calculation
+
+
+#### Example visualization of probability of binary variate
+#### depending (conditional on) another
+
+Xage <- data.frame(AGE=1:100)
+Yeff <- data.frame(LABEL_EFFUSION=1)
+Yale <- data.frame(LABEL_ATELECTASIS=1)
+
+condpreff <- Pr(Y = Yeff, X = Xage, learnt = learntdir,
+    parallel = parallel, quantiles = c(0.055, 0.945))
+
+condprale <- Pr(Y = Yale, X = Xage, learnt = learntdir,
+    parallel = parallel, quantiles = c(0.055, 0.945))
+
+pdf2('lungcondition_vs_age')
+plot(condpreff, ylim=0:1, col = 1, lty = 1,
+    legend=FALSE, ylab='Prob. of Effusion/Atelectasis given Age (89% variability)')
+plot(condprale, ylim=0:1, col = 2, lty = 2, legend=FALSE, add=TRUE)
+legend('top', legend = c('Effusion', 'Atelectasis'),
+    col=1:2, lty=1:2, pch=NA, bty='n')
+dev.off()
+
+
+
+
+
+#### Example probability calculation
 
 ## names of predictands
 Ynames <- c('LABEL_EFFUSION', 'LABEL_ATELECTASIS')
