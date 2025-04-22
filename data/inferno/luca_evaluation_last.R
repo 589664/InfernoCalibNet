@@ -1,10 +1,14 @@
-#### Evaluation of neuralnet+Inferno inferences
+###########################################################################
+#### Neuralnet+Inferno inferences
+###########################################################################
+
 library(inferno)
 
 ## utility function for pdf
 pdf2 <- function(file, ...){
     pdf(file = paste0(sub('.pdf$', '', file), '.pdf'),
-        paper = 'special', height=148/25.4*1.5, width=210/25.4*1.5, ...)
+        paper = 'special', height=148/25.4, width=148/25.4, #210/25.4, #A5 size
+        ...)
 }
 
 
@@ -21,9 +25,10 @@ testdata <- read.csv('calibration_test.csv')[, metadata$name]
 
 
 
-
+###########################################################################
 #### Example visualization of probability of binary variate
 #### depending (conditional on) another
+###########################################################################
 
 Xage <- data.frame(AGE=1:100)
 Yeff <- data.frame(LABEL_EFFUSION=1)
@@ -35,19 +40,70 @@ condpreff <- Pr(Y = Yeff, X = Xage, learnt = learntdir,
 condprale <- Pr(Y = Yale, X = Xage, learnt = learntdir,
     parallel = parallel, quantiles = c(0.055, 0.945))
 
+aspect <- median(abs(
+(c(diff(c(condpreff$values)), diff(c(condprale$values)))/1)/
+    (1/100)))
+
 pdf2('lungcondition_vs_age')
-plot(condpreff, ylim=0:1, col = 1, lty = 1,
+plot(condpreff, ylim = 0:1, col = 1, lty = 1, lwd = 2,
     legend=FALSE, ylab='Prob. of Effusion/Atelectasis given Age (89% variability)')
-plot(condprale, ylim=0:1, col = 2, lty = 2, legend=FALSE, add=TRUE)
+plot(condprale, ylim = 0:1, col = 2, lty = 2, lwd = 2,
+    legend=FALSE, add=TRUE)
 legend('top', legend = c('Effusion', 'Atelectasis'),
-    col=1:2, lty=1:2, pch=NA, bty='n')
+    col = 1:2, lty = 1:2, lwd = 2, pch=NA, bty='n')
 dev.off()
 
 
+###########################################################################
+#### Example "calibration" curves for different age groups
+###########################################################################
+
+#### Unfortunately inferno has no built-in function to
+#### calculate probabilities conditional on intervals.
+#### So such probabilities must be calculated explicitly
+#### using the probability rules:
+#### P(Y | X1, a<X2<b) = P(Y, a<X2<b | X1)/P(a<X2<b | X1)
+#### summing for X2=...
+#### Unfortunately this way we lose the variability
+#### (it could also be calculated, but by a lengthier procedure)
+
+## Effusion
+
+## Calculate probabilities for all ages
+probs1 <- Pr(Y = data.frame(LABEL_EFFUSION = 1, AGE = 0:99),
+    X = data.frame(LOGIT_EFFUSION = seq(-5, 5, length.out=129)),
+    learnt = learntdir, parallel = parallel,
+    quantiles = NULL, nsamples = 2)
+##
+probs2 <- Pr(Y = data.frame(AGE = 0:99),
+    X = data.frame(LOGIT_EFFUSION = seq(-5, 5, length.out=129)),
+    learnt = learntdir, parallel = parallel,
+    quantiles = NULL, nsamples = 2)
+
+## sum according to age groups and calculate conditionals
+condprobs <- sapply(seq(0, 80, by = 20),
+    function(minage){
+        colSums(probs1$values[minage:(minage+19),]) /
+            colSums(probs2$values[minage:(minage+19),])
+        }
+)
+
+pdf2('calibration_vs_age')
+flexiplot(x = plogis(seq(-5, 5, length.out=129)), y = condprobs,
+    xlab = 'NN sigmoid output', ylab = 'probability', main = 'effusion',
+    ylim = 0:1, xlim = 0:1,
+    col = palette('Okabe-Ito'), lty = 1:10, lwd = 3)
+legend('topleft',
+    legend = sapply(seq(0, 80, by = 20),
+        function(minage){paste0(minage, '--', minage+19)}),
+    lty=1:10, col=palette('Okabe-Ito'), lwd=2, pch=NA, bty='n'
+    )
+dev.off()
 
 
-
+###########################################################################
 #### Example probability calculation
+###########################################################################
 
 ## names of predictands
 Ynames <- c('LABEL_EFFUSION', 'LABEL_ATELECTASIS')
@@ -72,7 +128,12 @@ testdata[1, Ynames] # true value
 ## 1              0                 0
 
 
-#### Make inference for all points in the test set
+
+###########################################################################
+#### Utility-based evaluation
+###########################################################################
+
+#### Draw inference for all points in the test set
 
 ## names of predictands
 Ynames <- c('LABEL_EFFUSION', 'LABEL_ATELECTASIS')
@@ -158,7 +219,10 @@ avgyieldNN
 ## > [1] 0.645648
 
 
-#### "Calibration curves":
+###########################################################################
+#### "Calibration" curves
+###########################################################################
+
 ## compare value of sigmoid output with corresponding probability
 ## this is just an average, since the other variates are omitted
 
@@ -168,7 +232,7 @@ probNN <- Pr(Y=data.frame(LABEL_EFFUSION = 1), X = outNN,
     learnt = learntdir, parallel = parallel,
     quantiles = c(0.055, 0.945), nsamples = NULL)
 
-mypdf('calibration_effusion', asp = 1)
+pdf2('calibration_effusion')
 flexiplot(x = plogis(outNN[,1]), y = c(probNN$values),
     xlab = 'NN sigmoid output', ylab = 'probability', ylim = 0:1, xlim = 0:1,
     lwd = 3, main = 'effusion')
@@ -186,7 +250,7 @@ probNN <- Pr(Y=data.frame(LABEL_ATELECTASIS = 1), X = outNN,
     learnt = learntdir, parallel = parallel,
     quantiles = c(0.055, 0.945), nsamples = NULL)
 
-mypdf('calibration_atelectasis', asp = 1)
+pdf2('calibration_atelectasis')
 flexiplot(x = plogis(outNN[,1]), y = c(probNN$values),
     xlab = 'NN sigmoid output', ylab = 'probability', ylim = 0:1, xlim = 0:1,
     lwd = 3, main = 'atelectasis')
