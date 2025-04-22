@@ -95,7 +95,7 @@ flexiplot(x = plogis(seq(-5, 5, length.out=129)), y = condprobs,
     col = palette('Okabe-Ito'), lty = 1:10, lwd = 3)
 legend('topleft',
     legend = sapply(seq(0, 80, by = 20),
-        function(minage){paste0(minage, '--', minage+19)}),
+        function(minage){paste0('age ', minage, ' -- ', minage+19)}),
     lty=1:10, col=palette('Okabe-Ito'), lwd=2, pch=NA, bty='n'
     )
 dev.off()
