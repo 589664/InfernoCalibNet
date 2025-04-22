@@ -1,0 +1,41 @@
+
+Registered doParallelSNOW with 15 workers
+Warning: data have additional variates. Dropping them.
+
+Using 1500 datapoints
+Calculating auxiliary metadata
+
+ ************************** 
+ Saving output in directory
+ data/inferno/combinedML50 
+ ************************** 
+Starting Monte Carlo sampling of 3600 samples by 60 chains
+in a space of 703 (effectively 96897) dimensions.
+Using 15 cores: 60 samples per chain, max 4 chains per core.
+Core logs are being saved in individual files.
+
+C-compiling samplers appropriate to the variates (package Nimble)
+this can take tens of minutes. Please wait...Compiled core 1. Number of samplers: 3834.       
+Estimating remaining time, please be patient...Sampling. Core 10 estimated end time: 2025-04-22 17:21   Sampling. Core 11 estimated end time: 2025-04-22 17:25   Sampling. Core 4 estimated end time: 2025-04-22 17:33   Sampling. Core 8 estimated end time: 2025-04-22 17:34   Sampling. Core 7 estimated end time: 2025-04-22 17:40   Sampling. Core 3 estimated end time: 2025-04-22 17:41   Sampling. Core 2 estimated end time: 2025-04-22 17:42   Sampling. Core 10 estimated end time: 2025-04-22 17:21   Sampling. Core 6 estimated end time: 2025-04-22 17:44   Sampling. Core 9 estimated end time: 2025-04-22 17:49   Sampling. Core 14 estimated end time: 2025-04-22 17:58   Sampling. Core 1 estimated end time: 2025-04-22 18:03   Sampling. Core 5 estimated end time: 2025-04-22 18:15   Sampling. Core 15 estimated end time: 2025-04-22 18:23   Sampling. Core 4 estimated end time: 2025-04-22 17:42   Sampling. Core 8 estimated end time: 2025-04-22 17:45   Sampling. Core 9 estimated end time: 2025-04-22 17:48   Sampling. Core 1 estimated end time: 2025-04-22 17:51   Sampling. Core 2 estimated end time: 2025-04-22 17:49   Sampling. Core 6 estimated end time: 2025-04-22 17:49   Sampling. Core 7 estimated end time: 2025-04-22 17:53   Sampling. Core 3 estimated end time: 2025-04-22 17:53   Sampling. Core 11 estimated end time: 2025-04-22 17:54   Sampling. Core 5 estimated end time: 2025-04-22 18:00   Sampling. Core 9 estimated end time: 2025-04-22 17:38   Sampling. Core 10 estimated end time: 2025-04-22 17:39   Sampling. Core 4 estimated end time: 2025-04-22 17:40   Sampling. Core 1 estimated end time: 2025-04-22 17:40   Sampling. Core 6 estimated end time: 2025-04-22 17:41   Sampling. Core 5 estimated end time: 2025-04-22 17:49   Sampling. Core 11 estimated end time: 2025-04-22 17:50   Sampling. Core 8 estimated end time: 2025-04-22 17:51   Sampling. Core 14 estimated end time: 2025-04-22 18:21   Sampling. Core 7 estimated end time: 2025-04-22 17:54   Sampling. Core 4 estimated end time: 2025-04-22 17:40   Sampling. Core 13 estimated end time: 2025-04-22 19:57   Sampling. Core 8 estimated end time: 2025-04-22 17:43   Sampling. Core 5 estimated end time: 2025-04-22 17:44   Sampling. Core 11 estimated end time: 2025-04-22 17:45   Sampling. Core 3 estimated end time: 2025-04-22 18:04   Sampling. Core 1 estimated end time: 2025-04-22 17:48   Sampling. Core 7 estimated end time: 2025-04-22 17:52   Sampling. Core 13 estimated end time: 2025-04-22 18:55   Sampling. Core 10 estimated end time: 2025-04-22 17:58   Sampling. Core 14 estimated end time: 2025-04-22 18:19   Sampling. Core 9 estimated end time: 2025-04-22 17:59   Sampling. Core 2 estimated end time: 2025-04-22 18:22   Sampling. Core 15 estimated end time: 2025-04-22 19:15   Sampling. Core 14 estimated end time: 2025-04-22 18:05   Sampling. Core 6 estimated end time: 2025-04-22 18:07   Sampling. Core 3 estimated end time: 2025-04-22 18:10   Sampling. Core 12 estimated end time: 2025-04-22 22:31   Sampling. Core 15 estimated end time: 2025-04-22 18:50   Sampling. Core 2 estimated end time: 2025-04-22 18:22   Sampling. Core 13 estimated end time: 2025-04-22 19:17   Sampling. Core 13 estimated end time: 2025-04-22 18:46   Sampling. Core 12 estimated end time: 2025-04-22 20:40   Sampling. Core 12 estimated end time: 2025-04-22 19:34   Sampling. Core 15 estimated end time: 2025-04-22 18:55   Sampling. Core 12 estimated end time: 2025-04-22 19:08   Finished Monte Carlo sampling.                                 
+
+Max number of Monte Carlo iterations across chains: 42130 
+Max number of used mixture components: 47 
+
+Checking test data
+( #49 #321 #561 #634 #1098 #1170 #1177 #1252 )
+
+rel. MC standard error: min: 0.045  max: 0.11  mean: 0.083 
+eff. sample size: min: 87  max: 500  mean: 210 
+needed thinning: min: 11  max: 63  mean: 42 
+average: min: 9e-06  max: 0.00044  mean: 0.00016 
+
+Plotting final Monte Carlo traces and marginal samples...
+
+Total computation time: 1.8 hours 
+Average total time per chain: 0.03 hours 
+
+Removing temporary output files.
+Finished.
+
+
+Closing connections to cores.

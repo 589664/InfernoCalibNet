@@ -182,8 +182,8 @@ truevalues <- apply(trueY, 1, function(x){(x[1] + 2 * x[2]) + 1})
 ## we could at most reach 46.7% accuracy:
 ## > table(truevalues)/sum(table(truevalues))*100
 ## truevalues
-##        1        2        3        4 
-## 46.74435 23.50925 22.61823  7.12817 
+##        1        2        3        4
+## 46.74435 23.50925 22.61823  7.12817
 
 
 ## test consistency
