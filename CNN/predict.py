@@ -87,8 +87,8 @@ def predict_from_image_path(image_path: str) -> tuple[tuple[float, float], np.nd
     image_tensor = transform(image)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = InfernoCalibNet(num_classes=2).to(device)
-    model.load_state_dict(torch.load(CALIB_DIR / "InfernoCalibNetML.pth", weights_only=True))
+    model = InfernoCalibNet(num_classes=2, model_type="resnet50").to(device)
+    model.load_state_dict(torch.load(CALIB_DIR / "InfernoCalibNetML50.pth", weights_only=True))
     model.eval()
 
     image_tensor = image_tensor.to(device)
