@@ -40,10 +40,6 @@ condpreff <- Pr(Y = Yeff, X = Xage, learnt = learntdir,
 condprale <- Pr(Y = Yale, X = Xage, learnt = learntdir,
     parallel = parallel, quantiles = c(0.055, 0.945))
 
-aspect <- median(abs(
-(c(diff(c(condpreff$values)), diff(c(condprale$values)))/1)/
-    (1/100)))
-
 pdf2('lungcondition_vs_age')
 plot(condpreff, ylim = 0:1, col = 1, lty = 1, lwd = 2,
     legend=FALSE, ylab='Prob. of Effusion/Atelectasis given Age (89% variability)')
