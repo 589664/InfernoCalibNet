@@ -12,12 +12,12 @@ config_path <- args[1]
 config <- fromJSON(config_path)
 
 # Extract values from config
-relative_path <- dirname(config$model_path)
-model_path    <- config$model_path
-quantiles     <- config$quantiles
-input_values  <- config$input_values
-predictors    <- config$predictors
-predictands   <- config$predictands
+relative_path   <- dirname(config$model_path)
+model_path      <- config$model_path
+quantiles       <- config$quantiles
+input_values    <- config$input_values
+predictors      <- config$predictors
+predictands     <- config$predictands
 
 #=======================================================================================================================
 # 📁 Load Model

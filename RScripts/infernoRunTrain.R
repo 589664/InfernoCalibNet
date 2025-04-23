@@ -11,11 +11,11 @@ relative_path <- "data/inferno"
 # Full file paths
 data_file_path <- file.path(relative_path, "calibration_train.csv")
 data_file      <- read.csv(data_file_path, na.strings = "", stringsAsFactors = FALSE, tryLogical = FALSE)
-metadata_file  <- file.path(relative_path, "metadata_atelectasis.csv")
-output_dir     <- file.path(relative_path, "atelectasis")
+metadata_file  <- file.path(relative_path, "meta_calibration_train.csv")
+output_dir     <- file.path(relative_path, "combinedML50")
 
 # Parallelism and seed
-parallel_cores <- 6
+parallel_cores <- 15
 random_seed    <- 42
 
 #=======================================================================================================================
