@@ -259,7 +259,6 @@ dev.off()
 #### Mutual information (and other entropies) between logits and age
 ###########################################################################
 
-set.seed(10)
 mi <- mutualinfo(
     Y1names = c('LOGIT_ATELECTASIS', 'LOGIT_EFFUSION'),
     Y2names = c('AGE'),
