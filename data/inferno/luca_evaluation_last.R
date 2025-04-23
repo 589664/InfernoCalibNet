@@ -253,3 +253,48 @@ flexiplot(x = plogis(outNN[,1]), y = c(probNN$values),
 plotquantiles(x = plogis(outNN[,1]), y = probNN$quantiles[1,,], add = TRUE)
 flexiplot(x = 0:1, y=0:1, lty = 2, lwd = 2, col = 5, add = TRUE)
 dev.off()
+
+
+###########################################################################
+#### Mutual information (and other entropies) between logits and age
+###########################################################################
+
+set.seed(10)
+mi <- mutualinfo(
+    Y1names = c('LOGIT_ATELECTASIS', 'LOGIT_EFFUSION'),
+    Y2names = c('AGE'),
+    X = NULL,
+    learnt = learntdir, parallel = parallel)
+mi
+## $MI
+##      value      error 
+## 0.10503075 0.00888871 
+## 
+## $CondEn12
+##     value     error 
+## 5.2255378 0.0228907 
+## 
+## $CondEn21
+##     value     error 
+## 5.9128910 0.0162255 
+## 
+## $En1
+##    value    error 
+## 5.330753 0.022555 
+## 
+## $En2
+##     value     error 
+## 6.0173237 0.0157206 
+## 
+## $MImax
+##    value    error 
+## 5.330753 0.022555 
+## 
+## $unit
+## [1] "Sh"
+## 
+## $Y1names
+## [1] "LOGIT_ATELECTASIS" "LOGIT_EFFUSION"   
+## 
+## $Y2names
+## [1] "AGE"
