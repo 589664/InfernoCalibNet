@@ -297,3 +297,81 @@ mi
 ## 
 ## $Y2names
 ## [1] "AGE"
+
+###########################################################################
+#### Mutual information (and other entropies) between logits and age
+###########################################################################
+
+
+
+
+###########################################################################
+#### Test on different base rates
+###########################################################################
+
+## Rates and counts in current test set
+
+cases <- expand.grid(LABEL_ATELECTASIS = 0:1, LABEL_EFFUSION = 0:1)
+casenames <- c('none', 'atel', 'effu', 'both')
+
+oldN <- nrow(testdata)
+
+oldcounts <- apply(cases, 1, function(x){
+    nrow(testdata[
+        testdata[['LABEL_ATELECTASIS']] == x[['LABEL_ATELECTASIS']] &
+        testdata[['LABEL_EFFUSION']] == x[['LABEL_EFFUSION']]
+      , ])})
+names(oldcounts) <- casenames
+oldrates <- oldcounts/sum(oldcounts)
+oldrates
+##      none      atel      effu      both 
+## 0.4674435 0.2261823 0.2350925 0.0712817 
+
+
+## Maximization of the new test set
+
+## new rates
+set.seed(800)
+newrates <- c(0.65, 0.15, 0.15, 0.05)
+names(newrates) <- casenames
+## none atel effu both 
+## 0.75 0.10 0.10 0.05 
+
+for(acase in seq_len(nrow(cases))){
+    testcounts <- floor(newrates * oldcounts[acase] / newrates[acase])
+    if(all(testcounts <= oldcounts)){
+        message('Use "', casenames[acase], '"')
+        newcounts <- testcounts
+        newN <- sum(testcounts)
+        message('New N: ', newN)
+    }
+}
+## Use "none"
+## New N: 1048
+
+newtestdata <- testdata[0,] # empty
+for(acase in seq_len(nrow(cases))){
+    tochoose <- sample( which(
+        testdata[['LABEL_ATELECTASIS']] == cases[acase, 'LABEL_ATELECTASIS'] &
+            testdata[['LABEL_EFFUSION']] == cases[acase, 'LABEL_EFFUSION']
+    ), size = newcounts[acase], replace = FALSE)
+    ##
+    newtestdata <- rbind(newtestdata, testdata[tochoose,])
+}
+
+## double check the new rates, adjust for rounding
+newcounts <- apply(cases, 1, function(x){
+    nrow(newtestdata[
+        newtestdata[['LABEL_ATELECTASIS']] == x[['LABEL_ATELECTASIS']] &
+        newtestdata[['LABEL_EFFUSION']] == x[['LABEL_EFFUSION']]
+      , ])})
+names(newcounts) <- casenames
+newrates <- newcounts/sum(newcounts)
+newcounts
+newrates
+## none atel effu both 
+##  682  157  157   52 
+##      none      atel      effu      both 
+## 0.6507634 0.1498092 0.1498092 0.0496183 
+
+write.csv(newtestdata, 'calibration_test_newbaserate.csv', row.names = FALSE, quote = TRUE, na = '')
