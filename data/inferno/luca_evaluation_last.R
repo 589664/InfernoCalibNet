@@ -16,7 +16,7 @@ pdf2 <- function(file, ...){
 parallel <- 8
 
 ## Name of directory where 'learnt' has been saved
-learntdir <- 'data/inferno/combinedML50'
+learntdir <- 'combinedML50'
 
 metadata <- read.csv(file.path(learntdir, 'metadata.csv'))
 
@@ -299,8 +299,153 @@ mi
 ## [1] "AGE"
 
 ###########################################################################
-#### Mutual information (and other entropies) between logits and age
+#### Quantification of informational importance of Age and logits
 ###########################################################################
+
+predictands <- c('LABEL_ATELECTASIS', 'LABEL_EFFUSION')
+predictors <- setdiff(metadata[['name']], predictands)
+## [1] "AGE"               "GENDER"            "VP"                "LOGIT_EFFUSION"   
+## [5] "LOGIT_ATELECTASIS"
+
+## Mutual info between predictands and predictors
+mi <- mutualinfo(
+    Y1names = predictands,
+    Y2names = predictors,
+    X = NULL,
+    learnt = learntdir, parallel = parallel)
+mi
+## $MI
+##     value     error 
+## 0.3777087 0.0157587 
+## 
+## $CondEn12
+##     value     error 
+## 1.4014823 0.0182823 
+## 
+## $CondEn21
+##      value      error 
+## 12.9454169  0.0339496 
+## 
+## $En1
+##    value    error 
+## 1.779391 0.012501 
+## 
+## $En2
+##      value      error 
+## 13.3231693  0.0304032 
+## 
+## $MImax
+##    value    error 
+## 1.779391 0.012501 
+## 
+## $unit
+## [1] "Sh"
+## 
+## $Y1names
+## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"   
+## 
+## $Y2names
+## [1] "AGE"               "GENDER"            "VP"                "LOGIT_EFFUSION"   
+## [5] "LOGIT_ATELECTASIS"
+
+
+## Mutual info between predictands and predictors minus age
+milessage <- mutualinfo(
+    Y1names = predictands,
+    Y2names = setdiff(predictors, 'AGE'),
+    X = NULL,
+    learnt = learntdir, parallel = parallel)
+milessage
+## $MI
+##     value     error 
+## 0.3948613 0.0151739 
+## 
+## $CondEn12
+##     value     error 
+## 1.3782617 0.0179181 
+## 
+## $CondEn21
+##     value     error 
+## 7.0512066 0.0284069 
+## 
+## $En1
+##     value     error 
+## 1.7728609 0.0124469 
+## 
+## $En2
+##    value    error 
+## 7.446014 0.024456 
+## 
+## $MImax
+##     value     error 
+## 1.7728609 0.0124469 
+## 
+## $unit
+## [1] "Sh"
+## 
+## $Y1names
+## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"   
+## 
+## $Y2names
+## [1] "GENDER"            "VP"                "LOGIT_EFFUSION"    "LOGIT_ATELECTASIS"
+
+
+## Mutual info between predictands and predictors minus age
+milesslogits <- mutualinfo(
+    Y1names = predictands,
+    Y2names = setdiff(predictors, c('LOGIT_EFFUSION', 'LOGIT_ATELECTASIS')),
+    X = NULL,
+    learnt = learntdir, parallel = parallel)
+milesslogits
+## $MI
+##      value      error 
+## 0.02271764 0.00475409 
+## 
+## $CondEn12
+##     value     error 
+## 1.7620067 0.0134365 
+## 
+## $CondEn21
+##     value     error 
+## 7.9205017 0.0167034 
+## 
+## $En1
+##     value     error 
+## 1.7850014 0.0126448 
+## 
+## $En2
+##     value     error 
+## 7.9431939 0.0160873 
+## 
+## $MImax
+##     value     error 
+## 1.7850014 0.0126448 
+## 
+## $unit
+## [1] "Sh"
+## 
+## $Y1names
+## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"   
+## 
+## $Y2names
+## [1] "AGE"    "GENDER" "VP"    
+
+
+## For Age, the absolute difference is zero within the numerical error
+mi$MI - milessage$MI * c(1, -1) # errors must be added
+##      value      error 
+## -0.0171526  0.0309326 
+
+## The logits are informationally important
+mi$MI - milesslogits$MI * c(1, -1) # errors must be added
+##     value     error 
+## 0.3549911 0.0205128
+##
+## Relative difference: 94% !
+100 * (mi$MI['value'] - milesslogits$MI['value']) / mi$MI['value']
+##   value 
+## 93.9854    
+
 
 
 
