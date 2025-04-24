@@ -340,13 +340,13 @@ names(newrates) <- casenames
 for(acase in seq_len(nrow(cases))){
     testcounts <- floor(newrates * oldcounts[acase] / newrates[acase])
     if(all(testcounts <= oldcounts)){
-        message('Use "', casenames[acase], '"')
+        message('Keep "', casenames[acase], '"')
         newcounts <- testcounts
         newN <- sum(testcounts)
         message('New N: ', newN)
     }
 }
-## Use "none"
+## Keep "none"
 ## New N: 1048
 
 newtestdata <- testdata[0,] # empty
