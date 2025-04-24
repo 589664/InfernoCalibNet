@@ -334,8 +334,6 @@ oldrates
 set.seed(800)
 newrates <- c(0.65, 0.15, 0.15, 0.05)
 names(newrates) <- casenames
-## none atel effu both 
-## 0.75 0.10 0.10 0.05 
 
 for(acase in seq_len(nrow(cases))){
     testcounts <- floor(newrates * oldcounts[acase] / newrates[acase])
