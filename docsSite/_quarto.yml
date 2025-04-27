@@ -3,10 +3,11 @@ project:
   output-dir: _site
 
 website:
-  title: "My Documentation Site"
+  title: "InfernoCalibNet"
   sidebar:
     style: floating
     search: true
+    collapse-level: 1
     contents:
       - section: "Overview"
         contents:
@@ -22,9 +23,9 @@ website:
       - icon: github
         href: https://github.com/m4siko
       - icon: linkedin
-        href: https://linkedin.com/in/yourusername
+        href: https://www.linkedin.com/in/maksim-ohvrill/
   page-footer:
-    center: "© 2025 My Documentation Site"
+    center: "© 2025 InfernoCalibNet - All Rights Reserved"
 
 format:
   html:
@@ -32,5 +33,7 @@ format:
     toc-location: right
     theme:
       light: flatly
-      dark: darkly
+      dark:
+        - darkly
+        - theme-dark.scss
     mainfont: Palatino
