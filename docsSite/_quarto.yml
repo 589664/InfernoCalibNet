@@ -26,7 +26,6 @@ website:
         href: https://github.com/m4siko
       - icon: linkedin
         href: https://linkedin.com/in/yourusername
-      - toggle: dark-mode
 
 format:
   html:
