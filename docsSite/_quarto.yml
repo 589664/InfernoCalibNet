@@ -32,7 +32,9 @@ format:
     toc: true
     toc-location: right
     theme:
-      light: flatly
+      light:
+        - flatly
+        - theme-light.scss
       dark:
         - darkly
         - theme-dark.scss

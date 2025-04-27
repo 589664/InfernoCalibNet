@@ -1,20 +1,34 @@
 /*-- scss:defaults --*/
-// Customize variables for dark mode
-$dark-bg-text-color: #f5f7f8;
-$dark-bg-link-color: #4dcbb3;
-$dark-bg-code-color: #ffa07a;
+// Dark mode specific variables
+$navbar-bg: #63a4bc;         // Light mode navbar background
+$navbar-color: #ffffff;       // Light mode navbar text color
+$navbar-hover-color: #4dcbb3; // Light mode hover color
 
+$navbar-dark-bg: #63a4bc;     // Dark mode navbar background
+$navbar-dark-color: #ffffff;  // Dark mode navbar text color
+$navbar-dark-hover-color: #4dcbb3; // Dark mode hover color
 /*-- scss:rules --*/
-// Custom manual rule for navbar background
-html[data-bs-theme='dark'] .navbar {
-  background-color: #63a4bc;
 
-  .navbar-brand,
-  .nav-link {
-    color: $dark-bg-text-color;
+// Navbar flex
+.quarto-color-scheme-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    &:hover {
-      color: $dark-bg-link-color;
-    }
-  }
+.quarto-color-scheme-toggle > i {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(255, 255, 0, 0.838);
+  mask-image: url('https://unpkg.com/heroicons@2.2.0/24/outline/sun.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url('https://unpkg.com/heroicons@2.2.0/24/outline/sun.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  text-indent: -9999px;
+  transition: opacity 0.5s ease;
 }

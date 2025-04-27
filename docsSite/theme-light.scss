@@ -1,0 +1,28 @@
+/*-- scss:defaults --*/
+// Light mode specific variables
+
+/*-- scss:rules --*/
+
+// Navbar flex (same)
+.quarto-color-scheme-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.quarto-color-scheme-toggle > i {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-color: #73afd7d1;
+  mask-image: url('https://unpkg.com/heroicons@2.2.0/24/outline/moon.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url('https://unpkg.com/heroicons@2.2.0/24/outline/moon.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  text-indent: -9999px;
+  transition: opacity 0.5s ease;
+}
