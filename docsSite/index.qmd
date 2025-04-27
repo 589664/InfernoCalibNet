@@ -2,7 +2,9 @@
 title: "Welcome"
 ---
 
-# Welcome to My Documentation Site
+# Welcome to InfernoCalibNet
+
+![InfernoCalibNet Banner](banner.png)
 
 Some introduction text here.
 
@@ -10,11 +12,15 @@ Some introduction text here.
 
 More content here...
 
-## Contributors
 
 ::: {.aside}
-**Contributors:**
-- Your Name
-- Collaborator 1
-- Collaborator 2
+### Developers & Contributors
+
+- **Maksim Ohvrill**
+  <a href="https://orcid.org/0000-0002-1825-0097" target="_blank">
+    <img src="https://cdn.simpleicons.org/orcid/63a4bc" alt="ORCID" width="24" style="vertical-align: middle;"/>
+  </a>
+  <a href="https://github.com/m4siko" target="_blank">
+    <img src="https://cdn.simpleicons.org/github/63a4bc" alt="GitHub" width="24" style="vertical-align: middle;"/>
+  </a>
 :::
