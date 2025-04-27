@@ -2,6 +2,19 @@
 title: "Welcome"
 ---
 
-# Welcome to My Docs
+# Welcome to My Documentation Site
 
-This is the main page of my documentation site.
+Some introduction text here.
+
+## Overview
+
+More content here...
+
+## Contributors
+
+::: {.aside}
+**Contributors:**
+- Your Name
+- Collaborator 1
+- Collaborator 2
+:::

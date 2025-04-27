@@ -4,27 +4,27 @@ project:
 
 website:
   title: "My Documentation Site"
+  sidebar:
+    style: floating
+    search: true
+    contents:
+      - section: "Overview"
+        contents:
+          - index.qmd
+      - section: "Notebooks"
+        contents:
+          - 2.1-clinicalExperiments.ipynb
+      - section: "Notes"
+        contents:
+          - 0.4-metrics.md
   navbar:
-    left:
-      - text: Home
-        file: index.qmd
-      - text: Notebooks
-        menu:
-          - text: Clinical Experiments
-            file: 2.1-clinicalExperiments.ipynb
-      - text: Notes
-        menu:
-          - text: Metrics
-            file: 0.4-metrics.md
-      - text: What's On
-        file: whatson.qmd
-      - text: Contributors
-        file: contributors.qmd
     right:
       - icon: github
         href: https://github.com/m4siko
       - icon: linkedin
         href: https://linkedin.com/in/yourusername
+  page-footer:
+    center: "© 2025 My Documentation Site"
 
 format:
   html:

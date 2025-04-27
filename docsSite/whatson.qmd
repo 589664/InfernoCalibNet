@@ -1,9 +1,0 @@
----
-title: "What's On"
----
-
-# What's On
-
-- 📅 New notebooks added regularly
-- 🚀 New analysis coming soon
-- 🛠️ Project improvements in progress
