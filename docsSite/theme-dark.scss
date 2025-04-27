@@ -1,12 +1,8 @@
-.navbar {
-    background-color: #63a4bc;
+  /*-- scss:defaults --*/
+// Customize navbar background in dark mode
+$navbar-dark-bg: #63a4bc;
+$navbar-dark-color: #f5f7f8;
+$navbar-dark-hover-color: #4dcbb3;
 
-    .navbar-nav .nav-link,
-    .navbar-brand {
-      color: #ffffff;
-
-      &:hover {
-        color: #4dcbb3;
-      }
-    }
-  }
+/*-- scss:rules --*/
+// (optional: add custom rules here if needed)
