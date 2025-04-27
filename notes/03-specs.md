@@ -1,3 +1,7 @@
+---
+title: "Specifications"
+---
+
 # **Batch Size, Epochs, and Dataset Size Considerations**
 
 ### 1. Understanding the Relations:

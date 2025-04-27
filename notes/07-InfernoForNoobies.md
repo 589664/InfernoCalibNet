@@ -1,3 +1,7 @@
+---
+title: "Inferno explained"
+---
+
 ## What `Pr()` Does
 - 🧠 Computes `P(Y | X, data)` using a model trained with `learn()`.
 - 🔄 Uses Monte Carlo sampling to simulate many versions of `P(Y \| X)` – one for each plausible world.

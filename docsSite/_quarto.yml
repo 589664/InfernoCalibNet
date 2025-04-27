@@ -1,12 +1,6 @@
 project:
   type: website
   output-dir: _site
-  files:
-    - index.qmd
-    - 2.1-clinicalExperiments.ipynb
-    - 0.4-metrics.md
-    - whatson.qmd
-    - contributors.qmd
 
 website:
   title: "My Documentation Site"

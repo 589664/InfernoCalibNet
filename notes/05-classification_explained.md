@@ -1,3 +1,7 @@
+---
+title: "Classification task"
+---
+
 # Machine Learning Classification: Binary, Multiclass, and Multilabel
 
 ## **Summary of Classification Tasks**

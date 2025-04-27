@@ -1,3 +1,7 @@
+---
+title: "Software"
+---
+
 # Running a Python Script in a VM Linux Terminal and Keeping It Running After Disconnect
 
 This guide explains how to run a Python script in your Linux Virtual Machine (VM) so that it continues to execute even after you disconnect. This guide uses the Linux utility `screen`.
