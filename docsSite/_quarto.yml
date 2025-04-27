@@ -1,0 +1,12 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "My Documentation Site"
+  navbar:
+    title: "Home"
+
+format:
+  html:
+    theme: cosmo

@@ -63,3 +63,10 @@ Navigate to projects root and run following (tree for linux has to be installed)
 ```bash
 tree -d -L 2 -I '__pycache__|.git'
 ```
+
+## Init quatro project:
+
+
+```bash
+quarto create-project docsSite
+```

@@ -1,0 +1,7 @@
+---
+title: "Welcome"
+---
+
+# Welcome to My Docs
+
+This is the main page of my documentation site.

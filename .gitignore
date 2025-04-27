@@ -129,6 +129,7 @@ wandb
 tensorflow
 xrays
 etc
+_site/
 # added by luca
 .directory
 Rplots.pdf
