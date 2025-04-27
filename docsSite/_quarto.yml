@@ -5,7 +5,6 @@ project:
 website:
   title: "My Documentation Site"
   navbar:
-    title: "Home"
     left:
       - text: Home
         file: index.qmd
@@ -29,6 +28,8 @@ website:
 
 format:
   html:
+    toc: true
+    toc-location: right
     theme:
       light: flatly
       dark: darkly
