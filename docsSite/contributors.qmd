@@ -1,0 +1,9 @@
+---
+title: "Contributors"
+---
+
+# Contributors
+
+- **Your Name** — Creator, Developer
+- **Contributor 1** — Helped with notebooks
+- **Contributor 2** — Improved documentation

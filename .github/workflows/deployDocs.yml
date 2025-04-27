@@ -27,6 +27,11 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
+      - name: Copy notebooks and markdown notes to docsSite
+        run: |
+          cp notebooks/*.ipynb docsSite/ || true
+          cp notes/*.md docsSite/ || true
+
       - name: Render the Quarto site
         run: quarto render
         working-directory: docsSite
