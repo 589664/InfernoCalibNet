@@ -8,8 +8,10 @@
 
 > **Calibration modeling for CNN outputs using Bayesian nonparametric inference**
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.md)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-ff69b4.svg)](CODE_OF_CONDUCT.md)
+[![License: GPL v3](https://img.shields.io/badge/License:%20Covenant-GPL%20v3-f3eef8.svg?logo=read-the-docs&logoColor=white)](LICENSE.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenan-2.0-fcd53f.svg?logo=read-the-docs&logoColor=white)](LICENSE.md)
+[![InfernoCalibNet](https://img.shields.io/badge/InfernoCalibNet%20Docs-1.0-074057.svg?logo=read-the-docs&logoColor=white)](https://m4siko.github.io/InfernoCalibNet/)
+
 
 ---
 

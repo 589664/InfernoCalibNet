@@ -4,6 +4,8 @@ project:
 
 website:
   title: "InfernoCalibNet"
+  repo-url: https://github.com/m4siko/InfernoCalibNet
+  repo-actions: [edit, source, issue]
   sidebar:
     style: floating
     search: true
@@ -31,6 +33,8 @@ format:
   html:
     toc: true
     toc-location: right
+    code-fold: true
+    code-tools: true
     theme:
       light:
         - flatly
