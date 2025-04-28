@@ -33,7 +33,7 @@ format:
   html:
     toc: true
     toc-location: right
-    code-tools: true
+    code-fold: true
     theme:
       light:
         - flatly
