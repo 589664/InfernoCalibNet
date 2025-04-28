@@ -16,14 +16,12 @@ pdf2 <- function(file, ...){
 parallel <- 8
 
 ## Name of directory where 'learnt' has been saved
-learntdir <- 'combinedML50'
+learntdir <- 'data/inferno/combinedML50'
 
 metadata <- read.csv(file.path(learntdir, 'metadata.csv'))
 
 ## Load test data
-testdata <- read.csv('calibration_test.csv')[, metadata$name]
-
-
+testdata <- read.csv(file.path('data/inferno', 'calibration_test.csv'))[, metadata$name]
 
 ###########################################################################
 #### Example visualization of probability of binary variate
@@ -266,35 +264,35 @@ mi <- mutualinfo(
     learnt = learntdir, parallel = parallel)
 mi
 ## $MI
-##      value      error 
-## 0.10503075 0.00888871 
-## 
+##      value      error
+## 0.10503075 0.00888871
+##
 ## $CondEn12
-##     value     error 
-## 5.2255378 0.0228907 
-## 
+##     value     error
+## 5.2255378 0.0228907
+##
 ## $CondEn21
-##     value     error 
-## 5.9128910 0.0162255 
-## 
+##     value     error
+## 5.9128910 0.0162255
+##
 ## $En1
-##    value    error 
-## 5.330753 0.022555 
-## 
+##    value    error
+## 5.330753 0.022555
+##
 ## $En2
-##     value     error 
-## 6.0173237 0.0157206 
-## 
+##     value     error
+## 6.0173237 0.0157206
+##
 ## $MImax
-##    value    error 
-## 5.330753 0.022555 
-## 
+##    value    error
+## 5.330753 0.022555
+##
 ## $unit
 ## [1] "Sh"
-## 
+##
 ## $Y1names
-## [1] "LOGIT_ATELECTASIS" "LOGIT_EFFUSION"   
-## 
+## [1] "LOGIT_ATELECTASIS" "LOGIT_EFFUSION"
+##
 ## $Y2names
 ## [1] "AGE"
 
@@ -304,7 +302,7 @@ mi
 
 predictands <- c('LABEL_ATELECTASIS', 'LABEL_EFFUSION')
 predictors <- setdiff(metadata[['name']], predictands)
-## [1] "AGE"               "GENDER"            "VP"                "LOGIT_EFFUSION"   
+## [1] "AGE"               "GENDER"            "VP"                "LOGIT_EFFUSION"
 ## [5] "LOGIT_ATELECTASIS"
 
 ## Mutual info between predictands and predictors
@@ -315,37 +313,37 @@ mi <- mutualinfo(
     learnt = learntdir, parallel = parallel)
 mi
 ## $MI
-##     value     error 
-## 0.3777087 0.0157587 
-## 
+##     value     error
+## 0.3777087 0.0157587
+##
 ## $CondEn12
-##     value     error 
-## 1.4014823 0.0182823 
-## 
+##     value     error
+## 1.4014823 0.0182823
+##
 ## $CondEn21
-##      value      error 
-## 12.9454169  0.0339496 
-## 
+##      value      error
+## 12.9454169  0.0339496
+##
 ## $En1
-##    value    error 
-## 1.779391 0.012501 
-## 
+##    value    error
+## 1.779391 0.012501
+##
 ## $En2
-##      value      error 
-## 13.3231693  0.0304032 
-## 
+##      value      error
+## 13.3231693  0.0304032
+##
 ## $MImax
-##    value    error 
-## 1.779391 0.012501 
-## 
+##    value    error
+## 1.779391 0.012501
+##
 ## $unit
 ## [1] "Sh"
-## 
+##
 ## $Y1names
-## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"   
-## 
+## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"
+##
 ## $Y2names
-## [1] "AGE"               "GENDER"            "VP"                "LOGIT_EFFUSION"   
+## [1] "AGE"               "GENDER"            "VP"                "LOGIT_EFFUSION"
 ## [5] "LOGIT_ATELECTASIS"
 
 
@@ -357,35 +355,35 @@ milessage <- mutualinfo(
     learnt = learntdir, parallel = parallel)
 milessage
 ## $MI
-##     value     error 
-## 0.3948613 0.0151739 
-## 
+##     value     error
+## 0.3948613 0.0151739
+##
 ## $CondEn12
-##     value     error 
-## 1.3782617 0.0179181 
-## 
+##     value     error
+## 1.3782617 0.0179181
+##
 ## $CondEn21
-##     value     error 
-## 7.0512066 0.0284069 
-## 
+##     value     error
+## 7.0512066 0.0284069
+##
 ## $En1
-##     value     error 
-## 1.7728609 0.0124469 
-## 
+##     value     error
+## 1.7728609 0.0124469
+##
 ## $En2
-##    value    error 
-## 7.446014 0.024456 
-## 
+##    value    error
+## 7.446014 0.024456
+##
 ## $MImax
-##     value     error 
-## 1.7728609 0.0124469 
-## 
+##     value     error
+## 1.7728609 0.0124469
+##
 ## $unit
 ## [1] "Sh"
-## 
+##
 ## $Y1names
-## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"   
-## 
+## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"
+##
 ## $Y2names
 ## [1] "GENDER"            "VP"                "LOGIT_EFFUSION"    "LOGIT_ATELECTASIS"
 
@@ -398,53 +396,53 @@ milesslogits <- mutualinfo(
     learnt = learntdir, parallel = parallel)
 milesslogits
 ## $MI
-##      value      error 
-## 0.02271764 0.00475409 
-## 
+##      value      error
+## 0.02271764 0.00475409
+##
 ## $CondEn12
-##     value     error 
-## 1.7620067 0.0134365 
-## 
+##     value     error
+## 1.7620067 0.0134365
+##
 ## $CondEn21
-##     value     error 
-## 7.9205017 0.0167034 
-## 
+##     value     error
+## 7.9205017 0.0167034
+##
 ## $En1
-##     value     error 
-## 1.7850014 0.0126448 
-## 
+##     value     error
+## 1.7850014 0.0126448
+##
 ## $En2
-##     value     error 
-## 7.9431939 0.0160873 
-## 
+##     value     error
+## 7.9431939 0.0160873
+##
 ## $MImax
-##     value     error 
-## 1.7850014 0.0126448 
-## 
+##     value     error
+## 1.7850014 0.0126448
+##
 ## $unit
 ## [1] "Sh"
-## 
+##
 ## $Y1names
-## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"   
-## 
+## [1] "LABEL_ATELECTASIS" "LABEL_EFFUSION"
+##
 ## $Y2names
-## [1] "AGE"    "GENDER" "VP"    
+## [1] "AGE"    "GENDER" "VP"
 
 
 ## For Age, the absolute difference is zero within the numerical error
 mi$MI - milessage$MI * c(1, -1) # errors must be added
-##      value      error 
-## -0.0171526  0.0309326 
+##      value      error
+## -0.0171526  0.0309326
 
 ## The logits are informationally important
 mi$MI - milesslogits$MI * c(1, -1) # errors must be added
-##     value     error 
+##     value     error
 ## 0.3549911 0.0205128
 ##
 ## Relative difference: 94% !
 100 * (mi$MI['value'] - milesslogits$MI['value']) / mi$MI['value']
-##   value 
-## 93.9854    
+##   value
+## 93.9854
 
 
 
@@ -469,8 +467,8 @@ oldcounts <- apply(cases, 1, function(x){
 names(oldcounts) <- casenames
 oldrates <- oldcounts/sum(oldcounts)
 oldrates
-##      none      atel      effu      both 
-## 0.4674435 0.2261823 0.2350925 0.0712817 
+##      none      atel      effu      both
+## 0.4674435 0.2261823 0.2350925 0.0712817
 
 
 ## Maximization of the new test set
@@ -512,10 +510,10 @@ names(newcounts) <- casenames
 newrates <- newcounts/sum(newcounts)
 newcounts
 newrates
-## none atel effu both 
-##   36  330  330   36 
-##      none      atel      effu      both 
-## 0.0491803 0.4508197 0.4508197 0.0491803 
+## none atel effu both
+##   36  330  330   36
+##      none      atel      effu      both
+## 0.0491803 0.4508197 0.4508197 0.0491803
 
 write.csv(newtestdata, 'calibration_test_newbaserate.csv', row.names = FALSE, quote = TRUE, na = '')
 
@@ -581,8 +579,8 @@ truevalues <- apply(trueY, 1, function(x){(x[1] + 2 * x[2]) + 1})
 ## we could at most reach 45.1% accuracy:
 table(truevalues)/sum(table(truevalues))*100
 ## truevalues
-##        1        2        3        4 
-##  4.91803 45.08197 45.08197  4.91803 
+##        1        2        3        4
+##  4.91803 45.08197 45.08197  4.91803
 
 
 ## test consistency

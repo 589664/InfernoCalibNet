@@ -1,15 +1,13 @@
 /*-- scss:defaults --*/
-// Dark mode specific variables
-$navbar-bg: #63a4bc;         // Light mode navbar background
-$navbar-color: #ffffff;       // Light mode navbar text color
-$navbar-hover-color: #4dcbb3; // Light mode hover color
+$navbar-bg: #63a4bc;
+$navbar-color: #ffffff;
+$navbar-hover-color: #4dcbb3;
 
-$navbar-dark-bg: #63a4bc;     // Dark mode navbar background
-$navbar-dark-color: #ffffff;  // Dark mode navbar text color
-$navbar-dark-hover-color: #4dcbb3; // Dark mode hover color
+$navbar-dark-bg: #63a4bc;
+$navbar-dark-color: #ffffff;
+$navbar-dark-hover-color: #4dcbb3;
+
 /*-- scss:rules --*/
-
-// Navbar flex
 .quarto-color-scheme-toggle {
   display: flex;
   justify-content: center;

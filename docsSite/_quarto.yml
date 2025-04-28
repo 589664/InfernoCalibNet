@@ -14,9 +14,15 @@ website:
       - section: "Overview"
         contents:
           - index.qmd
-      - section: "Notebooks"
+      - section: "Clinical Experiments"
         contents:
           - 2.1-clinicalExperiments.ipynb
+        contents:
+          - 2.2-baseRateExperiment.ipynb
+        contents:
+          - 2.3-calibrationCurves.ipynb
+        contents:
+          - 2.4-mutualInformation.ipynb
       - section: "Notes"
         contents:
           - 0.4-metrics.md
@@ -33,7 +39,6 @@ format:
   html:
     toc: true
     toc-location: right
-    code-fold: true
     theme:
       light:
         - flatly
