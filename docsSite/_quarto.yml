@@ -17,11 +17,8 @@ website:
       - section: "Clinical Experiments"
         contents:
           - 2.1-clinicalExperiments.ipynb
-        contents:
           - 2.2-baseRateExperiment.ipynb
-        contents:
           - 2.3-calibrationCurves.ipynb
-        contents:
           - 2.4-mutualInformation.ipynb
       - section: "Notes"
         contents:
