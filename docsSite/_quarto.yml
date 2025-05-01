@@ -5,7 +5,7 @@ project:
 website:
   title: "InfernoCalibNet"
   repo-url: https://github.com/m4siko/InfernoCalibNet
-  repo-actions: [issue]
+  repo-actions: [issue, source]
   sidebar:
     style: floating
     search: true
@@ -20,7 +20,7 @@ website:
         - 0.2-dataprep4InfernoTrain.ipynb
       - section: "CNN/Inferno evaluation"
         contents:
-        - 1.1-thresholdUtility
+        - 1.1-thresholdUtility.ipynb
         - 1.2-clinicalUtilityR.ipynb
       - section: "Clinical Experiments"
         contents:

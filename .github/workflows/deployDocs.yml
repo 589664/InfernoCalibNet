@@ -1,8 +1,6 @@
 name: Deploy docsSite Quarto to GitHub Pages
 
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -27,11 +25,11 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Copy specific notebooks and markdown notes to docsSite
+      - name: Copy notebooks, notes, and assets to docsSite
         run: |
           cp -r notebooks/* docsSite/ || true
           cp notes/0.4-metrics.md docsSite/ || true
-          cp assets/banner.png docsSite/ || true
+          cp -r assets/* docsSite/ || true
 
       - name: Render the Quarto site
         run: quarto render
