@@ -3,7 +3,7 @@ message: "If you use this software or refer to its documentation, please cite it
 title: "InfernoCalibNet: Bayesian Calibration of CNN Outputs to Aid Clinical Decision-Making"
 version: "1.0"
 type: software
-date-released: 2024-04-29
+date-released: 2024-06-02
 authors:
   - family-names: Ohvrill
     given-names: Maksim
