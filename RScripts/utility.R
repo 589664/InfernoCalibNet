@@ -5,7 +5,7 @@ library("inferno")
 library("jsonlite")
 
 num_threads <- 10
-inferno_model_dir <- "data/inferno/combined"
+inferno_model_dir <- "data/inferno/combinedML50"
 conf_output_path <- "data/inferno/inferno_CM.json"
 
 metadata <- read.csv(file.path(inferno_model_dir, "metadata.csv"))

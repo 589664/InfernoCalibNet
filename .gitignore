@@ -125,7 +125,6 @@ dmypy.json
 
 # Custom
 wandb
-*.pth
 tensorflow
 xrays
 etc

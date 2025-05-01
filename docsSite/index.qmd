@@ -2,11 +2,25 @@
 title: "Welcome to InfernoCalibNet"
 ---
 
-![](banner.png)
+[![](banner.png)](https://github.com/m4siko/InfernoCalibNet)
 
-## Overview
+> Calibrating neural networks with Bayesian nonparametric regression (Inferno) to quantify uncertainty and improve prediction reliability.
 
-Calibrating neural networks with Bayesian nonparametric regression (Inferno) to quantify uncertainty and improve prediction reliability.
+::: {.callout-tip title="Project Overview"}
+Through uncertainty-aware modeling, this research explores the application of Bayesian regression and convolutional neural networks (CNNs) to assist medical decision-making. The CNN serves as a probability converter in this configuration, converting complex visual input into a vector of real-valued class values. These ratings are treated as structured summaries of the visual information rather than as final judgments.
+
+Putting these outputs into Inferno, a Bayesian transducer that transforms raw logits into calibrated probability distributions, is the project's main goal. By adjusting for patient-specific base rates and incorporating previous data, this statistical post-processing stage allows clinicians to make decisions based on presented benefit rather than strict classification. Because the final decision is visible, individualized, and based on Bayesian reasoning, the design eliminates the need to "explain" the CNN itself by separating prediction from action.
+
+Through a series of hypothetical experiments created to mirror the needs of personalized medicine, the study investigates Inferno's durability and medicinal usefulness. Grad-CAM heatmaps, which provide visual explanations that localize model attention, are added to calibrated outputs. The combined probabilistic and location outputs are meant to help clinicians go beyond classification and provide informed, personalized medicine by helping them customize treatment choices for specific patients.
+:::
+
+
+## 🧠 System Architecture
+
+<div style="text-align: center;">
+  <img src="system_architecture.svg" width="100%" alt="System architecture diagram">
+</div>
+
 
 ::: {.aside}
 <div style="font-size: 0.9em; font-weight: bold; margin-bottom: 0.5em;">Developers & Contributors</div>
@@ -36,3 +50,19 @@ Calibrating neural networks with Bayesian nonparametric regression (Inferno) to 
   </tr>
 </table>
 :::
+
+
+## 📖 Citation
+
+If you use this software or refer to its documentation, please consider citing:
+
+```bibtex
+@software{infernoCalibNet,
+  author       = {Maksim Ohvrill and PierGianLuca Porta Mana},
+  title        = {InfernoCalibNet: Bayesian Calibration of CNN Outputs to Aid Clinical Decision-Making},
+  year         = {2024},
+  version      = {1.0},
+  date         = {2024-04-29},
+  url          = {https://m4siko.github.io/InfernoCalibNet/}
+}
+```

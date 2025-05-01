@@ -14,12 +14,24 @@ website:
       - section: "Overview"
         contents:
           - index.qmd
+      - section: "Data preparations"
+        contents:
+        - 0.1-dataprep4CNNTrain.ipynb
+        - 0.2-dataprep4InfernoTrain.ipynb
+      - section: "CNN/Inferno evaluation"
+        contents:
+        - 1.1-thresholdUtility
+        - 1.2-clinicalUtilityR.ipynb
       - section: "Clinical Experiments"
         contents:
           - 2.1-clinicalExperiments.ipynb
           - 2.2-baseRateExperiment.ipynb
           - 2.3-calibrationCurves.ipynb
           - 2.4-mutualInformation.ipynb
+      - section: "Full pipeline examples"
+        contents:
+        - 3.1-singeImageInspect.ipynb
+        - 3.2-CNN2Inferno.ipynb
       - section: "Notes"
         contents:
           - 0.4-metrics.md

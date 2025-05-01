@@ -130,7 +130,7 @@ def predict_from_image_path(image_path: str) -> tuple[tuple[float, float], np.nd
 def run_inferno_prediction(
     predictor_sets: list[dict[str, float | None]],
     predictand_input: dict[str, list],
-    model_path: Path = Path("data/inferno/combined_new_MT/learnt.rds"),
+    model_path: Path = Path("data/inferno/combinedML50/learnt.rds"),
     rscript_path: Path = Path("RScripts/inferno2PY.R"),
     input_csv_path: Path = Path("data/inferno/calibration_test.csv"),
     predictands: list[str] | None = None

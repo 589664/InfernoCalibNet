@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software or refer to its documentation, please cite it as below."
+title: "InfernoCalibNet: Bayesian Calibration of CNN Outputs to Aid Clinical Decision-Making"
+version: "1.0"
+type: software
+date-released: 2024-04-29
+authors:
+  - family-names: Ohvrill
+    given-names: Maksim
+    orcid: https://orcid.org/0009-0004-8157-2074
+  - family-names: Porta Mana
+    given-names: PierGianLuca
+    orcid: https://orcid.org/0000-0002-6070-0784
+repository-code: https://github.com/m4siko/InfernoCalibNet
+url: https://m4siko.github.io/InfernoCalibNet/
+license: GPL-3.0
