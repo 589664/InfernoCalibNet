@@ -92,4 +92,13 @@ runs = [
     {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
 ]
 
+runs1 = [
+    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
+    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 4e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
+    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
+]
+
 run_batch_training(runs, model_type='resnet50', pretrained=True)
+# run_batch_training(runs, model_type='resnet50', pretrained=False)
+# run_batch_training(runs1, model_type='resnet34', pretrained=True)
+

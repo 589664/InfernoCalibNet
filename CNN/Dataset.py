@@ -27,7 +27,7 @@ class ChestXRayDataset(Dataset):
             [
                 T.Resize((256, 256)),
                 T.ToTensor(),
-                T.Normalize(mean=[0.49765], std=[0.22854]),
+                # T.Normalize(mean=[0.49765], std=[0.22854]),
                 # Method 1 - Average mean: 0.49765, Average std: 0.22854
                 # Method 2 - Mean: 0.50509, Std: 0.24930
             ]

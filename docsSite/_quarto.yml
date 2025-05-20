@@ -5,7 +5,8 @@ project:
 website:
   title: "InfernoCalibNet"
   repo-url: https://github.com/m4siko/InfernoCalibNet
-  repo-actions: [issue, source]
+  repo-branch: prod
+  repo-actions: [issue]
   sidebar:
     style: floating
     search: true

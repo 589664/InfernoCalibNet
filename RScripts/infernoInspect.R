@@ -11,7 +11,7 @@ relative_path <- "data/inferno"
 # Full file paths
 input_file     <- file.path(relative_path, "calibration_test.csv")
 metadata_file  <- file.path(relative_path, "inferno_metadata.csv")
-inferno_dir    <- file.path(relative_path, "effusion")
+inferno_dir    <- file.path(relative_path, "combinedML50")
 
 # Parallelism and seed
 parallel_cores <- 7
