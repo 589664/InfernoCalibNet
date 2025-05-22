@@ -1,16 +1,25 @@
 import wandb
 import torch
+import random
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
-
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from CNN import Trainer, InfernoCalibNet, ChestXRayDataset, OUT_DIR
 
+def set_seed(seed: int = 42) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
-def run_batch_training(runs, model_type='resnet34', pretrained=True):
+def run_batch_training(runs, model_type='resnet50', pretrained=True):
     torch.cuda.empty_cache()
+    set_seed(42)
 
     train_dt = ChestXRayDataset(OUT_DIR / "ml_train.csv", transform=True)
     val_dt = ChestXRayDataset(OUT_DIR / "ml_val.csv", transform=False)
@@ -87,18 +96,16 @@ def run_batch_training(runs, model_type='resnet34', pretrained=True):
         trainer.train(num_epochs=num_epochs)
 
 runs = [
-    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
-    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 4e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
-    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
+    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 15},
 ]
-
-runs1 = [
-    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
-    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 4e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
-    {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
-]
-
 run_batch_training(runs, model_type='resnet50', pretrained=True)
+
+# Examples:
+# runs1 = [
+#     {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
+#     {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 4e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
+#     {"base_lr": 1e-4, "clf_lr": 5e-4, "weight_decay": 5e-4, "gamma": 0.6, "step_size": 5, "num_epochs": 20},
+# ]
 # run_batch_training(runs, model_type='resnet50', pretrained=False)
 # run_batch_training(runs1, model_type='resnet34', pretrained=True)
 

@@ -129,6 +129,7 @@ tensorflow
 xrays
 etc
 _site/
+archives
 # added by luca
 .directory
 Rplots.pdf

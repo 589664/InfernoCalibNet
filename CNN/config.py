@@ -15,9 +15,7 @@ STD     = 0.22854
 #=======================================================================================================================
 # 📂 Directory Paths
 #=======================================================================================================================
-
-ROOT_DIR = Path(__file__).parent.parent
-
+ROOT_DIR = Path(__file__).resolve().parents[1]
 XRAY_DIR = ROOT_DIR / "data" / "raw" / "xrays"
 CSV_PATH = ROOT_DIR / "data" / "raw" / "xraysAUX.csv"
 OUT_DIR = ROOT_DIR / "data" / "CNNprepared"
