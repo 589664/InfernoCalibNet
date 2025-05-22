@@ -1,3 +1,4 @@
+import os
 import wandb
 import torch
 import random
@@ -9,6 +10,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from CNN import Trainer, InfernoCalibNet, ChestXRayDataset, OUT_DIR
 
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
 def set_seed(seed: int = 42) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -16,19 +19,38 @@ def set_seed(seed: int = 42) -> None:
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True)
+
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
 
 def run_batch_training(runs, model_type='resnet50', pretrained=True):
     torch.cuda.empty_cache()
     set_seed(42)
 
+    generator = torch.Generator()
+    generator.manual_seed(42)
+
     train_dt = ChestXRayDataset(OUT_DIR / "ml_train.csv", transform=True)
     val_dt = ChestXRayDataset(OUT_DIR / "ml_val.csv", transform=False)
 
     train_loader = DataLoader(
-        train_dt, batch_size=32, shuffle=True, num_workers=8, pin_memory=True
+        train_dt,
+        batch_size=32,
+        shuffle=True,
+        num_workers=8,
+        pin_memory=True,
+        worker_init_fn=seed_worker,
+        generator=generator
     )
     val_loader = DataLoader(
-        val_dt, batch_size=32, shuffle=False, num_workers=8, pin_memory=True
+        val_dt,
+        batch_size=32,
+        shuffle=False,
+        num_workers=8,
+        pin_memory=True
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
