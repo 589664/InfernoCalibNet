@@ -33,7 +33,7 @@ console = Console()
 #====================================================================
 # 📸 Grad-CAM Visualization
 #====================================================================
-def runGradCAM(model: torch.nn.Module, input_tensor: torch.Tensor, device: torch.device):
+def runGradCAM(model: torch.nn.Module, input_tensor: torch.Tensor, device: torch.device, predicted_labels: list):
     model.eval()
     target_layer = model.base_model[-1]
 
@@ -55,7 +55,9 @@ def runGradCAM(model: torch.nn.Module, input_tensor: torch.Tensor, device: torch
     fig, ax = plt.subplots()
     ax.imshow(img, cmap="gray")
     ax.imshow(grayscale_cam, cmap="jet", alpha=0.5)
-    ax.set_title(f"Grad-CAM for predicted class {predicted_class}")
+
+    title = "Grad-CAM for predicted: " + ", ".join(predicted_labels)
+    ax.set_title(title)
     plt.axis("off")
     plt.show()
 
@@ -63,20 +65,8 @@ def runGradCAM(model: torch.nn.Module, input_tensor: torch.Tensor, device: torch
 # 🧠 Model Inference Function
 #====================================================================
 def predict_from_image_path(image_path: str) -> tuple[tuple[float, float], np.ndarray, np.ndarray]:
-    """
-    Runs prediction on a manually provided image path and returns raw float logits, probabilities, and binary predictions.
-
-    Args:
-        image_path (str): Path to the grayscale X-ray image.
-
-    Returns:
-        tuple: ((logit1, logit2), probabilities, predictions), logits as a float tuple.
-    """
     torch.cuda.empty_cache()
 
-    #====================================================================
-    # 📂 Define Input Parameters
-    #====================================================================
     transform = T.Compose([
         T.Resize((256, 256)),
         T.ToTensor(),
@@ -93,36 +83,31 @@ def predict_from_image_path(image_path: str) -> tuple[tuple[float, float], np.nd
 
     image_tensor = image_tensor.to(device)
 
-    #====================================================================
-    # 🔍 Run Model Prediction
-    #====================================================================
     with torch.no_grad():
         output = model(image_tensor.unsqueeze(0))
         logits = output.cpu().squeeze().numpy().astype(np.float32)
         probs = torch.sigmoid(torch.tensor(logits)).numpy()
-        predictions = (probs > 0.5).astype(int)
+        predictions = (probs > 0.28).astype(int)
 
-    #====================================================================
-    # 📊 Display Prediction Results
-    #====================================================================
-    console.rule("[bold green] CNN Prediction Result")
-    table = Table(title="Model Output for Manual Input", show_lines=True)
-    table.add_column("Label", justify="center")
-    table.add_column("Logit", justify="right")
-    table.add_column("Confidence", justify="right")
-    table.add_column("Prediction", justify="right")
+    print("[bold green]Prediction Result of CNN")
+    labels = ["Effusion", "Atelectasis"]
+    predicted_labels = []
 
-    for label, logit, prob, pred_val in zip(
-        ["Effusion", "Atelectasis"], logits, probs, predictions
-    ):
-        table.add_row(label, f"{logit:.4f}", f"{prob:.4f}", str(int(pred_val)))
+    rows = []
+    for label, logit, prob, pred_val in zip(labels, logits, probs, predictions):
+        if pred_val == 1:
+            predicted_labels.append(label)
+        rows.append({
+            "Label": label,
+            "Logit": round(float(logit), 4),
+            "Confidence": round(float(prob), 4),
+            "Prediction": int(pred_val)
+        })
 
-    console.print(table)
+    df_preds = pd.DataFrame(rows)
+    print(df_preds.to_string(index=False))
 
-    #====================================================================
-    # 📸 Generate Grad-CAM Visualization
-    #====================================================================
-    runGradCAM(model, image_tensor, device)
+    runGradCAM(model, image_tensor, device, predicted_labels)
 
     return (float(logits[0]), float(logits[1])), probs, predictions
 
