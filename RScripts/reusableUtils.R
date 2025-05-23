@@ -12,6 +12,13 @@ svg2 <- function(file, path = '.', ...) {
     svg(filename = fullpath, width = 148/25.4, height = 148/25.4, ...)
 }
 
+# Utility function to save plots to PDF
+pdf2 <- function(file, path = '.', ...) {
+    fullpath <- file.path(path, paste0(sub(".pdf$", "", file), ".pdf"))
+    pdf(file = fullpath, width = 148/25.4, height = 148/25.4, ...)
+}
+
+
 # Tie-breaking maximum selector
 choosemax <- function(x) {
     sample(rep(which(x == max(x)), 2), 1)
