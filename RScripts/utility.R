@@ -2,11 +2,9 @@
 # 📦 Load Libraries and Configuration
 # ================================================================================================================
 library("inferno")
-library("jsonlite")
 
 num_threads <- 10
 inferno_model_dir <- "data/inferno/combinedML50"
-conf_output_path <- "data/inferno/inferno_CM.json"
 
 metadata <- read.csv(file.path(inferno_model_dir, "metadata.csv"))
 test_data <- read.csv("data/inferno/calibration_test.csv")
@@ -35,7 +33,7 @@ probabilities <- Pr(
 )
 
 # ================================================================================================================
-# 🔬 Build Utility Matrix and Label Names
+# 🧮 Build Utility Matrix and Label Names
 # ================================================================================================================
 outcome_labels <- apply(y_grid, 1, function(x) paste0("eff_", x[1], "_ate_", x[2]))
 
@@ -59,8 +57,6 @@ expected_utilities <- utility_matrix %*% probabilities$values
 select_max <- function(x) sample(rep(which(x == max(x)), 2), 1)
 decision_indices <- apply(expected_utilities, 2, select_max)
 true_indices <- apply(y_true, 1, function(x) (x[1] + 2 * x[2]) + 1)
-true_labels <- apply(y_true, 1, function(x) paste0("eff_", x[1], "_ate_", x[2]))
-stopifnot(all(true_labels == outcome_labels[true_indices]))
 
 # ================================================================================================================
 # 📊 Evaluate Inferno Accuracy
@@ -69,25 +65,16 @@ avg_yield <- mean(utility_matrix[cbind(decision_indices, true_indices)])
 cat("🔍 Average Expected Utility from Inferno Decisions:", round(avg_yield, 6), "\n")
 
 # ================================================================================================================
-# 📉 Save Confusion Matrices to JSON for Python Plotting (Inferno-Based)
+# 📉 Print Confusion Matrices for Effusion and Atelectasis
 # ================================================================================================================
-conf_matrix_json <- function(true_vals, pred_vals) {
-  mat <- table(True = true_vals, Pred = pred_vals)
-  as.data.frame.matrix(mat)
-}
-
-# Reconstruct Inferno decisions into binary label predictions
 y_pred_eff <- (decision_indices - 1) %% 2
 y_pred_ate <- (decision_indices - 1) %/% 2
 
-conf_eff <- conf_matrix_json(y_true$LABEL_EFFUSION, y_pred_eff)
-conf_ate <- conf_matrix_json(y_true$LABEL_ATELECTASIS, y_pred_ate)
+conf_eff <- table(True = y_true$LABEL_EFFUSION, Pred = y_pred_eff)
+conf_ate <- table(True = y_true$LABEL_ATELECTASIS, Pred = y_pred_ate)
 
-write_json(
-  list(
-    effusion = conf_eff,
-    atelectasis = conf_ate
-  ),
-  conf_output_path,
-  pretty = TRUE
-)
+cat("\n📊 Confusion Matrix - Effusion\n")
+print(conf_eff)
+
+cat("\n📊 Confusion Matrix - Atelectasis\n")
+print(conf_ate)
