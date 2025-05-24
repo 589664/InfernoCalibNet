@@ -9,56 +9,20 @@ library("inferno")
 relative_path <- "data/inferno"
 
 # Parallelism and seed
-parallel_cores <- 4
+parallel_cores <- 10
 random_seed    <- 42
 
 #=======================================================================================================================
-# 🔄 Prepare Prior for Effusion
+# 🔄 Prepare Prior for Training
 #=======================================================================================================================
 
-# File paths for Effusion
-input_file_eff  <- file.path(relative_path, "calibration_train.csv")
-metadata_eff    <- file.path(relative_path, "metadata_effusion.csv")
-output_eff      <- file.path(relative_path, "prior_effusion")
+# File paths
+input_file  <- file.path(relative_path, "calibration_train.csv")
+metadata    <- file.path(relative_path, "md_calibration_train.csv")
 
-# Generate metadata template for Effusion
+# Generate metadata template
 metadatatemplate(
-  data = input_file_eff,
-  file = metadata_eff,
-  includevrt = c("AGE", "GENDER", "VP", "LOGIT_EFFUSION", "LABEL_EFFUSION")
+  data = input_file,
+  file = metadata,
+  includevrt = c("AGE", "GENDER", "VP", "LOGIT_EFFUSION", "LABEL_EFFUSION", "LOGIT_ATELECTASIS", "LABEL_ATELECTASIS")
 )
-
-#=======================================================================================================================
-# 🔄 Prepare Prior for Atelectasis
-#=======================================================================================================================
-
-# File paths for Atelectasis
-input_file_ate    <- file.path(relative_path, "calibration_train.csv")
-metadata_ate      <- file.path(relative_path, "metadata_atelectasis.csv")
-output_ate        <- file.path(relative_path, "prior_atelectasis")
-
-# Generate metadata template for Atelectasis
-metadatatemplate(
-  data          = input_file_ate,
-  file          = metadata_ate,
-  includevrt    = c("AGE", "GENDER", "VP", "LOGIT_ATELECTASIS", "LABEL_ATELECTASIS")
-)
-
-#=======================================================================================================================
-# 📦 Run Prior Learning for Atelectasis change on paths demand to Effusion
-#=======================================================================================================================
-
-prior_ate_model <- learn(
-  data = NULL,
-  metadata = metadata_ate,
-  outputdir = output_ate,
-  prior = TRUE,
-  output = "learnt",
-  appendinfo = FALSE,
-  appendtimestamp = FALSE,
-  parallel = parallel_cores,
-  seed = random_seed
-)
-
-# Inspect structure
-str(prior_ate_model)
