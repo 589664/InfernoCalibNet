@@ -14,14 +14,15 @@ import numpy as np
 
 # Machine Learning
 import torch
+from PIL import Image
 import matplotlib.pyplot as plt
 from torchvision import transforms as T
-from PIL import Image
+from IPython.display import display, SVG
 
 # Visualization and Console Output
 from rich import print
+import matplotlib.pyplot as plt
 from rich.console import Console
-from rich.table import Table
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
@@ -112,6 +113,11 @@ def predict_from_image_path(image_path: str) -> tuple[tuple[float, float], np.nd
     return (float(logits[0]), float(logits[1])), probs, predictions
 
 
+#====================================================================
+# Inferno prediction
+#====================================================================
+
+
 def run_inferno_prediction(
     predictor_sets: list[dict[str, float | None]],
     predictand_input: dict[str, list],
@@ -119,25 +125,7 @@ def run_inferno_prediction(
     rscript_path: Path = Path("RScripts/inferno2PY.R"),
     input_csv_path: Path = Path("data/inferno/calibration_test.csv"),
     predictands: list[str] | None = None
-) -> tuple[pd.DataFrame, dict]:
-    """
-    Runs the Inferno prediction pipeline by preparing input predictors and predictands,
-    generating a config file, invoking an R script for prediction, and returning results.
-
-    Args:
-        predictor_sets (list[dict[str, float | None]]): List of predictor dictionaries.
-        predictand_input (dict[str, list]): Dictionary of predictand values.
-        model_path (Path, optional): Path to the R model file.
-        rscript_path (Path, optional): Path to the R script file.
-        input_csv_path (Path, optional): Path to a dummy CSV input file.
-        predictands (list[str] | None): List of predictand names. Defaults to keys of predictand_input.
-
-    Returns:
-        tuple[pd.DataFrame, dict]: DataFrame of predictions and the raw result dictionary.
-    """
-    #====================================================================
-    # 📂 Normalize and Prepare Input
-    #====================================================================
+) -> dict:
     all_keys = set().union(*predictor_sets)
     for row in predictor_sets:
         for key in all_keys:
@@ -153,44 +141,26 @@ def run_inferno_prediction(
     config = {
         "input_csv": str(input_csv_path),
         "model_path": str(model_path),
-        "quantiles": [0.055, 0.25, 0.75, 0.945],
         "input_values": manual_input_values,
         "predictors": predictors,
         "predictands": predictands
     }
 
-    console.rule("[bold yellow]🚀Params for Inferno")
-    print(config)
+    console = Console()
+    console.print("\n[bold yellow]🚀Params for Inferno")
+    console.print(config)
 
-    #====================================================================
-    # 🔍 Write Config to Temporary JSON File
-    #====================================================================
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w") as temp_config_file:
         json.dump(config, temp_config_file, indent=2)
         temp_config_path = temp_config_file.name
 
-    #====================================================================
-    # ♻️ Run R Script Using Config
-    #====================================================================
     subprocess.run(["Rscript", str(rscript_path), temp_config_path], check=True)
 
-    #====================================================================
-    # 📂 Load Result from R Output
-    #====================================================================
     result_path = os.path.join(os.path.dirname(str(model_path)), "result_probs.json")
     with open(result_path, "r") as f:
         result = json.load(f)
 
-    console.rule("[bold cyan]Inferno Results")
-
-    print("\n📊 Prediction Values:")
-    df = pd.DataFrame(result["values"])
-    print(df.to_string(index=True))
-
-    #====================================================================
-    # 🔧 Clean Up Temporary Files
-    #====================================================================
     os.remove(temp_config_path)
     os.remove(result_path)
 
-    return df, result
+    return result

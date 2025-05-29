@@ -23,7 +23,7 @@ target_frame <- data.frame(LABEL_EFFUSION = 0:1)
 # Predict with uncertainty quantiles
 uncertainty_bounds <- c(0.055, 0.25, 0.75, 0.945)
 result_probs <- Pr(Y = target_frame, X = input_features, learnt = inferno_model,
-                   parallel = parallel_cores, quantile = uncertainty_bounds)
+     parallel = parallel_cores, quantile = uncertainty_bounds)
 
 # Save plot to PDF with bold Palatino text
 pdf(file = file.path(plots_save_path), width = 7, height = 7, family = "Palatino")
