@@ -4,6 +4,7 @@ project:
 
 website:
   title: "InfernoCalibNet"
+  favicon: "favicon.ico"
   repo-url: https://github.com/m4siko/InfernoCalibNet
   repo-branch: prod
   repo-actions: [issue]
@@ -29,9 +30,9 @@ website:
           - 2.2-baseRateExperiment.ipynb
           - 2.3-calibrationCurves.ipynb
           - 2.4-mutualInformation.ipynb
-      - section: "Full pipeline examples"
+      - section: "Pipeline examples"
         contents:
-        - 3.1-singeImageInspect.ipynb
+        - 3.1-CNNImageInspect.ipynb
         - 3.2-CNN2Inferno.ipynb
       - section: "Notes"
         contents:

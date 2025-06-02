@@ -1,6 +1,6 @@
-#====================================================================
+# ====================================================================
 # 📂 Imports
-#====================================================================
+# ====================================================================
 # System
 import os
 import json
@@ -31,10 +31,16 @@ from CNN import InfernoCalibNet, CALIB_DIR
 
 console = Console()
 
-#====================================================================
+
+# ====================================================================
 # 📸 Grad-CAM Visualization
-#====================================================================
-def runGradCAM(model: torch.nn.Module, input_tensor: torch.Tensor, device: torch.device, predicted_labels: list):
+# ====================================================================
+def runGradCAM(
+    model: torch.nn.Module,
+    input_tensor: torch.Tensor,
+    device: torch.device,
+    predicted_labels: list,
+):
     model.eval()
     target_layer = model.base_model[-1]
 
@@ -55,16 +61,19 @@ def runGradCAM(model: torch.nn.Module, input_tensor: torch.Tensor, device: torch
     img = input_tensor.detach().cpu().squeeze().numpy()
     fig, ax = plt.subplots()
     ax.imshow(img, cmap="gray")
-    ax.imshow(grayscale_cam, cmap="jet", alpha=0.5)
+    ax.imshow(grayscale_cam, cmap="jet", alpha=0.5, rasterized=True)
 
-    title = "Grad-CAM for predicted: " + ", ".join(predicted_labels)
-    ax.set_title(title)
+    title = "Grad-CAM: " + " | ".join(predicted_labels)
+    ax.set_title(title, fontname="serif", fontsize=12)
     plt.axis("off")
-    plt.show()
 
-#====================================================================
+    plt.show()
+    plt.close(fig)
+
+
+# ====================================================================
 # 🧠 Model Inference Function
-#====================================================================
+# ====================================================================
 def predict_from_image_path(image_path: str) -> tuple[tuple[float, float], np.ndarray, np.ndarray]:
     torch.cuda.empty_cache()
 
@@ -113,9 +122,9 @@ def predict_from_image_path(image_path: str) -> tuple[tuple[float, float], np.nd
     return (float(logits[0]), float(logits[1])), probs, predictions
 
 
-#====================================================================
+# ====================================================================
 # Inferno prediction
-#====================================================================
+# ====================================================================
 
 
 def run_inferno_prediction(

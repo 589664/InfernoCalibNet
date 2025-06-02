@@ -6,14 +6,11 @@
   <img src="assets/banner.png" alt="InfernoCalibNet Banner" style="width:100%; margin:auto;">
 </p>
 
-> **Calibration modeling for CNN outputs using Bayesian nonparametric inference**
+> **Uncertainty aware predictions for medical AI using CNN and Bayesian nonparametrics framework (Inferno)**
 
 [![License: GPL v3](https://img.shields.io/badge/License:%20Covenant-GPL%20v3-f3eef8.svg?logo=read-the-docs&logoColor=white)](LICENSE.md)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenan-2.0-fcd53f.svg?logo=read-the-docs&logoColor=white)](LICENSE.md)
 [![InfernoCalibNet](https://img.shields.io/badge/InfernoCalibNet%20Docs-1.0-074057.svg?logo=read-the-docs&logoColor=white)](https://m4siko.github.io/InfernoCalibNet/)
-
-
----
 
 ## 🔍 Table of Contents
 
@@ -27,18 +24,17 @@
 - [🌟 Acknowledgements](#acknowledgements)
 - [📖 Citation](#citation)
 
----
 
 ## 📊 Overview
 
 <div style="border-left: 4px solid #074057; padding: 1em;">
 
-Through uncertainty-aware modeling, this research explores the application of Bayesian regression and convolutional neural networks (CNNs) to assist medical decision-making. The CNN serves as a probability converter in this configuration, converting complex visual input into a vector of real-valued class values. These ratings are treated as structured summaries of the visual information rather than as final judgments.
+Through uncertainty aware modeling, this research explores the application of Bayesian regression and convolutional neural networks (CNNs) to assist medical decision making. The CNN serves as a feature extractor in this configuration, converting complex visual input into a vector of real valued class values. These ratings are treated as structured summaries of the visual information rather than as final judgments.
 <br>
 
-Putting these outputs into Inferno, a Bayesian transducer that transforms raw logits into calibrated probability distributions, is the project's main goal. By adjusting for patient-specific base rates and incorporating previous data, this statistical post-processing stage allows clinicians to make decisions based on presented benefit rather than strict classification. Because the final decision is visible, individualized, and based on Bayesian reasoning, the design eliminates the need to "explain" the CNN itself by separating prediction from action.
+This project uses Inferno, a Bayesian method that turns the CNNs raw confidence scores (logits) into well adjusted probability estimates. By adjusting for patient specific base rates and incorporating previous data, this statistical module allows clinicians to make decisions based on presented benefit rather than strict classification. Because the final decision is visible, individualized and based on Bayesian reasoning, the design eliminates the need to "explain" the CNN itself by separating prediction from action.
 
-Through a series of hypothetical experiments created to mirror the needs of personalized medicine, the study investigates Inferno's durability and medicinal usefulness. Grad-CAM heatmaps, which provide visual explanations that localize model attention, are added to calibrated outputs. The combined probabilistic and location outputs are meant to help clinicians go beyond classification and provide informed, personalized medicine by helping them customize treatment choices for specific patients.
+Through a series of hypothetical experiments created to mirror the needs of personalized medicine, the project investigates Inferno's durability and medicinal usefulness. GradCAM heatmaps, which visually highlight where the CNN focuses its attention based on features from the base layer of the network, are included alongside the calibrated outputs. The combined probabilistic and location outputs are meant to help clinicians go beyond classification and provide informed, personalized medicine by helping them customize treatment choices for specific patients.
 
 </div>
 

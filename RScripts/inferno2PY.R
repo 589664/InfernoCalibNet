@@ -91,9 +91,6 @@ cat("========================================================\n")
 cat("Patient Predictor Data (Features Only):\n")
 print(x_patient)
 
-cat("\nTrue Labels (Ground Truth):\n")
-print(true_labels)
-
 cat("\nPredicted Probabilities for Outcomes (%):\n")
 print(data.frame(Outcome = pretty_outcomenames, Probability = round(probs$values * 100, 1)))
 
@@ -116,7 +113,7 @@ if (!is.null(probs$quantiles) && length(dim(probs$quantiles)) == 3) {
     if (!is.na(variability)) {
       pct_var <- round(variability * 100, 1)
       if (variability > 0.2) {
-        cat(sprintf("⚠️ Prediction %d shows high uncertainty (±%.1f%%). Consider reviewing.\n", i, pct_var))
+        cat(sprintf("⚠️ Prediction %d shows moderate uncertainty (±%.1f%%). Consider reviewing.\n", i, pct_var))
       } else {
         cat(sprintf("✅ Prediction %d is reliable (±%.1f%%).\n", i, pct_var))
       }
