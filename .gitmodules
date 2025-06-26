@@ -1,6 +1,7 @@
 [submodule "inferno"]
 	path = inferno
 	url = https://github.com/pglpm/inferno.git
+
 [submodule "thesis"]
 	path = thesis
 	url = https://github.com/m4siko/InfernoCalibNetThesis.git
